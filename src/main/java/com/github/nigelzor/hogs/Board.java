@@ -2,8 +2,12 @@ package com.github.nigelzor.hogs;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
+
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class Board {
 	private static final int PLAYERS = 4, ROWS = 4, COLS = 4;
@@ -11,11 +15,13 @@ public class Board {
 	private int currentPlayer = 0;
 	private List<Player> players;
 	private List<Home> homes;
+	private List<HomeConnection> homeConnections;
 	private ShiftMatrix<Tile> tiles;
 
 	public Board() {
 		players = Lists.newArrayList();
 		homes = Lists.newArrayList();
+
 		for (int i = 0; i < PLAYERS; i++) {
 			Colour colour = Colour.values()[i];
 			Player player = new Player(colour);
@@ -24,6 +30,12 @@ public class Board {
 			players.add(player);
 			homes.add(home);
 		}
+
+		homeConnections = Lists.newArrayList();
+		homeConnections.add(new HomeConnection(0, 0, Direction.SOUTH, Direction.EAST));
+		homeConnections.add(new HomeConnection(0, COLS - 1, Direction.SOUTH, Direction.WEST));
+		homeConnections.add(new HomeConnection(ROWS - 1, COLS - 1, Direction.NORTH, Direction.WEST));
+		homeConnections.add(new HomeConnection(ROWS - 1, 0, Direction.NORTH, Direction.EAST));
 
 		tiles = new ShiftMatrix<Tile>(ROWS, COLS);
 
@@ -47,6 +59,61 @@ public class Board {
 		tiles.set(1, 2, TileFactory.homework());
 		tiles.set(2, 2, TileFactory.potions());
 		tiles.set(2, 1, TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES));
+	}
+
+	// optional because a player could also be in a Home
+	private Optional<Index> findPlayerTile(Player player) {
+		for (int row = 0; row < ROWS; row++) {
+			for (int col = 0; col < COLS; col++) {
+				Tile tile = tiles.get(row, col);
+				if (tile != null && tile.getPlayers().contains(player)) {
+					return Optional.of(new Index(row, col));
+				}
+			}
+		}
+		return Optional.absent();
+	}
+
+	public Set<Move> potentialMoves() {
+		Set<Move> options = Sets.newHashSet();
+
+		options.add(new NoMove());
+
+		Player player = players.get(currentPlayer);
+		addWalkMoves(options, player);
+
+		return options;
+	}
+
+	private void addWalkMoves(Set<Move> options, Player player) {
+		for (Home home : homes) {
+			if (home.getPlayers().contains(player)) {
+				HomeConnection homeConnection = homeConnections.get(currentPlayer);
+				Tile connecting = tiles.get(homeConnection.getRow(), homeConnection.getCol());
+				for (Direction direction : homeConnection.getEdges()) {
+					if (connecting.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
+						options.add(new WalkMove(player, direction, home, connecting));
+					}
+				}
+				return;
+			}
+		}
+		Index index = findPlayerTile(player).get(); // where is the player, if not in a home or a tile?
+		Tile tile = tiles.get(index.getRow(), index.getCol());
+		for (Direction direction : tile.getConnections()) {
+			Index connectedIndex = direction.apply(index);
+			if (valid(connectedIndex)) {
+				Tile connectedTile = tiles.get(connectedIndex.getRow(), connectedIndex.getCol());
+				if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
+					options.add(new WalkMove(player, direction, tile, connectedTile));
+				}
+			}
+		}
+	}
+
+	private boolean valid(Index index) {
+		return index.getRow() >= 0 && index.getRow() < ROWS
+				&& index.getCol() >= 0 && index.getCol() < COLS;
 	}
 
 	@Override
