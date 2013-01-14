@@ -1,7 +1,5 @@
 package com.github.nigelzor.hogs
 
-import java.util.EnumSet
-
 public enum class Direction(val row: Int, val col: Int) {
 	NORTH : Direction(-1, 0)
 	EAST : Direction(0, 1)

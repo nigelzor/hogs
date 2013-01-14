@@ -10,7 +10,7 @@ public class ShiftMatrixTest {
 			var value: Char = 'A'
 			for (row in 0..(matrix.rows - 1)) {
 				for (col in 0..(matrix.cols - 1)) {
-					matrix.set(row, col, String(charArray(value++)))
+					matrix[row, col] = String(charArray(value++))
 				}
 			}
 			return matrix
@@ -18,94 +18,94 @@ public class ShiftMatrixTest {
 	}
 
 	[Test]
-	public fun testShiftingOneRight(): Unit {
+	public fun testShiftingOneRight() {
 		var moving = fill(ShiftMatrix<String>(2, 2))
-		moving.set(1, 1, null)
+		moving[1, 1] = null
 		moving.shift(1, 0)
 		var expected = fill(ShiftMatrix<String>(2, 2))
-		expected.set(1, 0, null)
-		expected.set(1, 1, "C")
+		expected[1, 0] = null
+		expected[1, 1] = "C"
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingOneLeft(): Unit {
+	public fun testShiftingOneLeft() {
 		var moving = fill(ShiftMatrix<String>(2, 2))
-		moving.set(0, 0, null)
+		moving[0, 0] = null
 		moving.shift(0, 1)
 		var expected = fill(ShiftMatrix<String>(2, 2))
-		expected.set(0, 0, "B")
-		expected.set(0, 1, null)
+		expected[0, 0] = "B"
+		expected[0, 1] = null
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingTwoLeft(): Unit {
+	public fun testShiftingTwoLeft() {
 		var moving = fill(ShiftMatrix<String>(1, 3))
-		moving.set(0, 0, null)
+		moving[0, 0] = null
 		moving.shift(0, 2)
 		var expected = ShiftMatrix<String>(1, 3)
-		expected.set(0, 0, "B")
-		expected.set(0, 1, "C")
-		expected.set(0, 2, null)
+		expected[0, 0] = "B"
+		expected[0, 1] = "C"
+		expected[0, 2] = null
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingPartOfRowLeft(): Unit {
+	public fun testShiftingPartOfRowLeft() {
 		var moving = fill(ShiftMatrix<String>(1, 3))
-		moving.set(0, 0, null)
+		moving[0, 0] = null
 		moving.shift(0, 1)
 		var expected = ShiftMatrix<String?>(1, 3)
-		expected.set(0, 0, "B")
-		expected.set(0, 1, null)
-		expected.set(0, 2, "C")
+		expected[0, 0] = "B"
+		expected[0, 1] = null
+		expected[0, 2] = "C"
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingOneDown(): Unit {
+	public fun testShiftingOneDown() {
 		var moving = fill(ShiftMatrix<String>(2, 2))
-		moving.set(1, 1, null)
+		moving[1, 1] = null
 		moving.shift(0, 1)
 		var expected = fill(ShiftMatrix<String>(2, 2))
-		expected.set(0, 1, null)
-		expected.set(1, 1, "B")
+		expected[0, 1] = null
+		expected[1, 1] = "B"
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingOneUp(): Unit {
+	public fun testShiftingOneUp() {
 		var moving = fill(ShiftMatrix<String>(2, 2))
-		moving.set(0, 0, null)
+		moving[0, 0] = null
 		moving.shift(1, 0)
 		var expected = fill(ShiftMatrix<String>(2, 2))
-		expected.set(1, 0, null)
-		expected.set(0, 0, "C")
+		expected[1, 0] = null
+		expected[0, 0] = "C"
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingTwoUp(): Unit {
+	public fun testShiftingTwoUp() {
 		var moving = fill(ShiftMatrix<String>(3, 1))
-		moving.set(0, 0, null)
+		moving[0, 0] = null
 		moving.shift(2, 0)
 		var expected = ShiftMatrix<String>(3, 1)
-		expected.set(0, 0, "B")
-		expected.set(1, 0, "C")
-		expected.set(2, 0, null)
+		expected[0, 0] = "B"
+		expected[1, 0] = "C"
+		expected[2, 0] = null
 		assertEquals(expected, moving)
 	}
 
 	[Test]
-	public fun testShiftingPartOfRowUp(): Unit {
+	public fun testShiftingPartOfRowUp() {
 		var moving = fill(ShiftMatrix<String>(3, 1))
-		moving.set(0, 0, null)
+		moving[0, 0] = null
 		moving.shift(1, 0)
 		var expected = ShiftMatrix<String>(3, 1)
-		expected.set(0, 0, "B")
-		expected.set(1, 0, null)
-		expected.set(2, 0, "C")
+		expected[0, 0] = "B"
+		expected[1, 0] = null
+		expected[2, 0] = "C"
 		assertEquals(expected, moving)
 	}
 

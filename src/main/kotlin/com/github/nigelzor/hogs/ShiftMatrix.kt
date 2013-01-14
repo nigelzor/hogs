@@ -2,8 +2,8 @@ package com.github.nigelzor.hogs
 
 import com.google.common.base.Preconditions
 
-public data class ShiftMatrix<T>(val rows : Int, val cols : Int, values : Array<T?>? = null) {
-	private val values : Array<T?>
+public data class ShiftMatrix<T>(val rows: Int, val cols: Int, values: Array<T?>? = null) {
+	private val values: Array<T?>
 	{
 		if (values != null) {
 			Preconditions.checkArgument(values.size == rows * cols, "values")
@@ -13,13 +13,13 @@ public data class ShiftMatrix<T>(val rows : Int, val cols : Int, values : Array<
 		}
 	}
 
-	public fun get(row : Int, col : Int) : T? {
+	public fun get(row: Int, col: Int): T? {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		return values[row * cols + col]
 	}
 
-	public fun set(row : Int, col : Int, value : T?) : Unit {
+	public fun set(row: Int, col: Int, value: T?): Unit {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		values[row * cols + col] = value
@@ -27,7 +27,7 @@ public data class ShiftMatrix<T>(val rows : Int, val cols : Int, values : Array<
 
 	// the order that directions are checked is arbitrary; so long as there's only one space
 	// free, there won't be any alternatives
-	public fun shift(row : Int, col : Int) : Unit {
+	public fun shift(row: Int, col: Int): Unit {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		var i: Int
@@ -56,7 +56,7 @@ public data class ShiftMatrix<T>(val rows : Int, val cols : Int, values : Array<
 		i = row
 		while (++i < rows) {
 			if (get(i, col) == null) {
-				var j : Int = i
+				var j: Int = i
 				while (j > row) {
 					set(j, col, get(j - 1, col))
 					j--
@@ -79,7 +79,7 @@ public data class ShiftMatrix<T>(val rows : Int, val cols : Int, values : Array<
 		}
 	}
 
-	public fun copy() : ShiftMatrix<T> {
+	public fun copy(): ShiftMatrix<T> {
 		return ShiftMatrix<T>(rows, cols, array(values))
 	}
 

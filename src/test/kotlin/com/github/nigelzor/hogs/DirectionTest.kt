@@ -1,7 +1,7 @@
 package com.github.nigelzor.hogs
 
-import org.junit.Test
 import kotlin.test.assertEquals
+import org.junit.Test
 
 public class DirectionTest {
 

@@ -1,5 +1,5 @@
 package com.github.nigelzor.hogs
 
 public trait Position {
-	val players : MutableSet<Player>
+	val players: MutableSet<Player>
 }
