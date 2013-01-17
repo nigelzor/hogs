@@ -10,24 +10,13 @@ public data class Board {
 	private val tiles: ShiftMatrix<Tile>
 
 	{
-		val players: MutableList<Player> = arrayListOf()
-		val homes: MutableList<Home> = arrayListOf()
-		for (i in 0..PLAYERS - 1) {
-			val colour = Colour.values()[i]
-			val player = Player(colour)
-			val home = Home(colour, hashSetOf(player))
-			players.add(player)
-			homes.add(home)
-		}
-		this.players = players
-		this.homes = homes
-
-		val homeConnections: MutableList<HomeConnection> = arrayListOf()
-		homeConnections.add(HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)))
-		homeConnections.add(HomeConnection(0, COLS - 1, setOf(Direction.SOUTH, Direction.WEST)))
-		homeConnections.add(HomeConnection(ROWS - 1, COLS - 1, setOf(Direction.NORTH, Direction.WEST)))
-		homeConnections.add(HomeConnection(ROWS - 1, 0, setOf(Direction.NORTH, Direction.EAST)))
-		this.homeConnections = homeConnections
+		players = Colour.values().map { Player(it) }
+		homes = players.map { Home(it.colour, hashSetOf(it)) }
+		homeConnections = listOf(
+				HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
+				HomeConnection(0, COLS - 1, setOf(Direction.SOUTH, Direction.WEST)),
+				HomeConnection(ROWS - 1, COLS - 1, setOf(Direction.NORTH, Direction.WEST)),
+				HomeConnection(ROWS - 1, 0, setOf(Direction.NORTH, Direction.EAST)))
 
 		tiles = ShiftMatrix<Tile>(ROWS, COLS)
 		tiles[0, 0] = TileFactory.tee()
