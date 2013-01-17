@@ -1,17 +1,20 @@
 package com.github.nigelzor.hogs
 
 import java.util.HashSet
+import com.github.nigelzor.mcts.GameState
 
-public data class Board {
-	private var currentPlayer: Int = 0
-	private val players: List<Player>
-	private val homes: List<Home>
-	private val homeConnections: List<HomeConnection>
-	private val tiles: ShiftMatrix<Tile>
+public data class Board: GameState<Move> {
+	override var playerJustMoved = 2
+	public var currentPlayer: Int = 0
+	private var players: List<Player>
+	private var homes: List<Home>
+	private var homeConnections: List<HomeConnection>
+	private var tiles: ShiftMatrix<Tile>
 
 	{
 		players = Colour.values().map { Player(it) }
-		homes = players.map { Home(it.colour, hashSetOf(it)) }
+		// map { (i, player) -> ... } would be nice, but no
+		homes = players.withIndices().map { Home(it.second.colour, hashSetOf(it.first)) }
 		homeConnections = listOf(
 				HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
 				HomeConnection(0, COLS - 1, setOf(Direction.SOUTH, Direction.WEST)),
@@ -43,7 +46,7 @@ public data class Board {
 		val COLS: Int = 4
 	}
 
-	private fun findPlayerTile(player: Player): Index? {
+	private fun findPlayerTile(player: Int): Index? {
 		for (row in 0..ROWS - 1) {
 			for (col in 0..COLS - 1) {
 				if (tiles[row, col]?.players?.contains(player) == true) {
@@ -54,28 +57,42 @@ public data class Board {
 		return null
 	}
 
-	public fun potentialMoves(): Set<Move> {
+	override fun result(playerJustMoved: Int): Double {
+		val pi = playerIndexFromPJM(playerJustMoved)
+		for (i in players.indices) {
+			if (players[i].collected.empty && homes[i].players.contains(players[i])) {
+				return if (i == pi) 1.0 else 0.0
+			}
+		}
+		throw IllegalStateException()
+	}
+
+	private fun playerIndexFromPJM(playerJustMoved: Int): Int {
+		if (playerJustMoved == 1) return 0
+		if (playerJustMoved == 2) return 2
+		throw IllegalStateException()
+	}
+
+	override fun possible(): Set<Move> {
 		var options: MutableSet<Move> = HashSet()
 		options.add(NoMove())
-		var player: Player = players[currentPlayer]
-		addWalkMoves(options, player)
+		addWalkMoves(options, currentPlayer)
 		return options
 	}
-	private fun addWalkMoves(options: MutableSet<Move>, player: Player): Unit {
-		for (home : Home in homes) {
-			if (player in home.players) {
-				val homeConnection: HomeConnection = homeConnections[currentPlayer]
-				val connecting: Tile? = tiles[homeConnection.row, homeConnection.col]
-				if (connecting != null) {
-					for (direction : Direction in homeConnection.edges) {
-						if (connecting.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-							options.add(WalkMove(player, direction, home, connecting))
-						}
 
+	private fun addWalkMoves(options: MutableSet<Move>, player: Int) {
+		if (player in homes[player].players) {
+			val homeConnection: HomeConnection = homeConnections[player]
+			val connecting: Tile? = tiles[homeConnection.row, homeConnection.col]
+			if (connecting != null) {
+				for (direction : Direction in homeConnection.edges) {
+					if (connecting.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
+						options.add(WalkMove(homes[player], connecting))
 					}
+
 				}
-				return
 			}
+			return
 		}
 		var index: Index = findPlayerTile(player)!!
 		var tile: Tile = tiles[index.row, index.col]!!
@@ -84,13 +101,31 @@ public data class Board {
 			if (valid(connectedIndex)) {
 				var connectedTile: Tile = tiles[connectedIndex.row, connectedIndex.col]!!
 				if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-					options.add(WalkMove(player, direction, tile, connectedTile))
+					options.add(WalkMove(tile, connectedTile))
 				}
 			}
 		}
 	}
+
 	private fun valid(index: Index): Boolean {
 		return index.row >= 0 && index.row < ROWS && index.col >= 0 && index.col < COLS
+	}
+
+	override fun apply(move: Move) {
+		playerJustMoved = 3 - playerJustMoved
+		move.apply(this)
+		currentPlayer = playerIndexFromPJM(playerJustMoved)
+	}
+
+	override fun clone(): Board {
+		val clone = Board()
+		clone.playerJustMoved = playerJustMoved
+		clone.currentPlayer = currentPlayer
+		clone.players = players.map { it.clone() }
+		clone.homes = homes.map { it.clone() }
+		clone.tiles = tiles.clone({ it?.clone() })
+
+		return clone
 	}
 
 	public fun print(out: Appendable) {

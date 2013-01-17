@@ -2,15 +2,9 @@ package com.github.nigelzor.hogs
 
 import com.google.common.base.Preconditions
 
-public data class ShiftMatrix<T>(val rows: Int, val cols: Int, values: Array<T?>? = null) {
-	private val values: Array<T?>
+public data class ShiftMatrix<T>(val rows: Int, val cols: Int, val values: Array<T?> = arrayOfNulls(rows * cols)) {
 	{
-		if (values != null) {
-			Preconditions.checkArgument(values.size == rows * cols, "values")
-			this.values = values
-		} else {
-			this.values = arrayOfNulls(rows * cols)
-		}
+		Preconditions.checkArgument(values.size == rows * cols, "values")
 	}
 
 	public fun get(row: Int, col: Int): T? {
@@ -79,8 +73,8 @@ public data class ShiftMatrix<T>(val rows: Int, val cols: Int, values: Array<T?>
 		}
 	}
 
-	public fun copy(): ShiftMatrix<T> {
-		return ShiftMatrix<T>(rows, cols, array(values))
+	public fun clone(cloner: (T?) -> T? = { it }): ShiftMatrix<T> {
+		return ShiftMatrix<T>(rows, cols, values.map(cloner).toArray())
 	}
 
 }

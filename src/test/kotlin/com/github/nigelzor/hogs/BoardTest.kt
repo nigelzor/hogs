@@ -8,7 +8,7 @@ public class BoardTest {
 	[Test]
 	public fun testFirstTurnWalkingMoves() {
 		var board = Board()
-		var potentialMoves = board.potentialMoves()
+		var potentialMoves = board.possible()
 		assertThat(potentialMoves, hasSize(2))
 	}
 }
