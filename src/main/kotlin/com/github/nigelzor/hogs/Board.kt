@@ -4,8 +4,9 @@ import java.util.HashSet
 import com.github.nigelzor.mcts.GameState
 
 public data class Board: GameState<Move> {
-	override var playerJustMoved = 2
+	override var playerJustMoved = 2 // TODO get rid of one of these
 	public var currentPlayer: Int = 0
+
 	private var players: List<Player>
 	private var homes: List<Home>
 	private var homeConnections: List<HomeConnection>
@@ -75,7 +76,13 @@ public data class Board: GameState<Move> {
 
 	override fun possible(): Set<Move> {
 		var options: MutableSet<Move> = HashSet()
-		options.add(NoMove())
+		for (i in players.indices) {
+			if (players[i].collected.empty && homes[i].players.contains(players[i])) {
+				return options; // game is over
+			}
+		}
+
+		//options.add(NoMove())
 		addWalkMoves(options, currentPlayer)
 		return options
 	}
@@ -92,16 +99,16 @@ public data class Board: GameState<Move> {
 
 				}
 			}
-			return
-		}
-		var index: Index = findPlayerTile(player)!!
-		var tile: Tile = tiles[index.row, index.col]!!
-		for (direction : Direction in tile.connections) {
-			var connectedIndex: Index = direction.apply(index)
-			if (valid(connectedIndex)) {
-				var connectedTile: Tile = tiles[connectedIndex.row, connectedIndex.col]!!
-				if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-					options.add(WalkMove(tile, connectedTile))
+		} else {
+			var index: Index = findPlayerTile(player)!!
+			var tile: Tile = tiles[index]!!
+			for (direction : Direction in tile.connections) {
+				var connectedIndex: Index = direction.apply(index)
+				if (valid(connectedIndex)) {
+					var connectedTile: Tile = tiles[connectedIndex]!!
+					if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
+						options.add(WalkMove(tile, connectedTile))
+					}
 				}
 			}
 		}
@@ -124,35 +131,43 @@ public data class Board: GameState<Move> {
 		clone.players = players.map { it.clone() }
 		clone.homes = homes.map { it.clone() }
 		clone.tiles = tiles.clone({ it?.clone() })
-
 		return clone
 	}
 
 	public fun print(out: Appendable) {
 		for (row in 0..ROWS - 1) {
 			for (col in 0..COLS - 1) {
-				out.append(' ')
-				out.append(if (tiles.get(row, col)?.connectsTo(Direction.NORTH) == true) 'X' else ' ')
-				out.append(' ')
+				val tile = tiles[row, col]
+				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
+				out.append(if (tile?.connectsTo(Direction.NORTH) == true) 'X' else ' ')
+				out.append(if (tile?.players?.contains(2) == true) '2' else ' ')
 			}
 			out.append("\n")
 			for (col in 0..COLS - 1) {
-				if (tiles.get(row, col) == null) {
+				val tile = tiles[row, col]
+				if (tile == null) {
 					out.append(" / ")
 				} else {
-					out.append(if (tiles.get(row, col)?.connectsTo(Direction.WEST) == true) 'X' else ' ')
-					out.append(if (tiles.get(row, col)?.objective != null) 'G' else 'X')
-					out.append(if (tiles.get(row, col)?.connectsTo(Direction.EAST) == true) 'X' else ' ')
+					out.append(if (tile?.connectsTo(Direction.WEST) == true) 'X' else ' ')
+					out.append(if (tile?.objective != null) 'G' else 'X')
+					out.append(if (tile?.connectsTo(Direction.EAST) == true) 'X' else ' ')
 				}
 			}
 			out.append("\n")
 			for (col in 0..COLS - 1) {
-				out.append(' ')
-				out.append(if (tiles.get(row, col)?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
-				out.append(' ')
+				val tile = tiles[row, col]
+				out.append(if (tile?.players?.contains(4) == true) '4' else ' ')
+				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
+				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
 			}
 			out.append("\n")
 		}
+	}
+
+	fun toString(): String {
+		val sb = StringBuilder()
+		print(sb)
+		return sb.toString()
 	}
 
 }

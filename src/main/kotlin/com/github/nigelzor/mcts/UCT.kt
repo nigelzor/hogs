@@ -76,8 +76,7 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 
 }
 
-fun playUCT() {
-	val state = OXOState()
+fun <T> playUCT(state: GameState<T>) {
 	while (!state.possible().empty) {
 		println(state)
 		val itermax = if (state.playerJustMoved == 1) 1000 else 100
@@ -94,5 +93,5 @@ fun playUCT() {
 }
 
 fun main(args: Array<String>) {
-	playUCT()
+	playUCT(OXOState())
 }

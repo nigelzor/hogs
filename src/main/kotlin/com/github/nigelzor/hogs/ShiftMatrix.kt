@@ -7,10 +7,18 @@ public data class ShiftMatrix<T>(val rows: Int, val cols: Int, val values: Array
 		Preconditions.checkArgument(values.size == rows * cols, "values")
 	}
 
+	public fun get(index: Index): T? {
+		return get(index.row, index.col)
+	}
+
 	public fun get(row: Int, col: Int): T? {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		return values[row * cols + col]
+	}
+
+	public fun set(index: Index, value: T?) {
+		return set(index.row, index.col, value)
 	}
 
 	public fun set(row: Int, col: Int, value: T?): Unit {
