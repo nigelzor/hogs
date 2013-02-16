@@ -77,7 +77,7 @@ public data class Board: GameState<Move> {
 	override fun possible(): Set<Move> {
 		var options: MutableSet<Move> = HashSet()
 		for (i in players.indices) {
-			if (players[i].collected.empty && homes[i].players.contains(players[i])) {
+			if (players[i].collected.size < 4 && homes[i].players.contains(players[i])) {
 				return options; // game is over
 			}
 		}
@@ -88,28 +88,32 @@ public data class Board: GameState<Move> {
 	}
 
 	private fun addWalkMoves(options: MutableSet<Move>, player: Int) {
-		if (player in homes[player].players) {
-			val homeConnection: HomeConnection = homeConnections[player]
-			val connecting: Tile? = tiles[homeConnection.row, homeConnection.col]
-			if (connecting != null) {
-				for (direction : Direction in homeConnection.edges) {
-					if (connecting.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-						options.add(WalkMove(homes[player], connecting))
-					}
+		fun canWalk(from: Set<Direction>, to: Set<Direction>): Boolean {
+			return from.any { to.contains(it.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)) }
+		}
 
-				}
+		if (player in homes[player].players) {
+			val homeConnection = homeConnections[player]
+			val connectedIndex = homeConnection.index
+			val connectedTile = tiles[connectedIndex]
+			if (connectedTile != null && canWalk(homeConnection.connections, connectedTile.connections)) {
+				options.add(WalkMove({ it.homes[player] }, { it.tiles[connectedIndex]!! }))
 			}
 		} else {
-			var index: Index = findPlayerTile(player)!!
-			var tile: Tile = tiles[index]!!
-			for (direction : Direction in tile.connections) {
-				var connectedIndex: Index = direction.apply(index)
+			val index = findPlayerTile(player)!!
+			val tile = tiles[index]!!
+			for (direction in tile.connections) {
+				val connectedIndex = direction.apply(index)
 				if (valid(connectedIndex)) {
-					var connectedTile: Tile = tiles[connectedIndex]!!
+					val connectedTile = tiles[connectedIndex]!!
 					if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-						options.add(WalkMove(tile, connectedTile))
+						options.add(WalkMove({ it.tiles[index]!! }, { it.tiles[connectedIndex]!! }))
 					}
 				}
+			}
+			val homeConnection = homeConnections[player]
+			if (index == homeConnection.index && canWalk(tile.connections, homeConnection.connections)) {
+				options.add(WalkMove({ it.tiles[index]!! }, { it.homes[player] }))
 			}
 		}
 	}
@@ -122,6 +126,16 @@ public data class Board: GameState<Move> {
 		playerJustMoved = 3 - playerJustMoved
 		move.apply(this)
 		currentPlayer = playerIndexFromPJM(playerJustMoved)
+		for (row in 0..ROWS - 1) {
+			for (col in 0..COLS - 1) {
+				val tile = tiles[row, col]!!
+				if (tile.objective != null) {
+					for (player in tile.players) {
+						players[player].collected.add(tile.objective)
+					}
+				}
+			}
+		}
 	}
 
 	override fun clone(): Board {

@@ -79,7 +79,7 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 fun <T> playUCT(state: GameState<T>) {
 	while (!state.possible().empty) {
 		println(state)
-		val itermax = if (state.playerJustMoved == 1) 1000 else 100
+		val itermax = if (state.playerJustMoved == 1) 10 else 10
 		val m = UCT(rootstate = state, itermax = itermax, verbose = false)
 		println("Best Move: ${m}")
 		state.apply(m)
