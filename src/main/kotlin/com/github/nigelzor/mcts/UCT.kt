@@ -22,8 +22,8 @@ package com.github.nigelzor.mcts
 import java.util.Random
 
 val random = Random()
-fun <T> random(values: Set<T>): T {
-	return values.toList()[random.nextInt(values.size())]
+fun <T> random(values: Set<T>, rng: Random = random): T {
+	return values.toList()[rng.nextInt(values.size())]
 }
 
 /**
@@ -52,8 +52,12 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 		}
 
 		// rollout - this can often be made orders of magnitude quicker using a state.randomMove() function
-		while (!state.possible().empty) {
-			state.apply(random(state.possible()))
+		while (true) {
+			val move = state.randomMove(random)
+			if (move == null) {
+				break
+			}
+			state.apply(move)
 		}
 
 		// backpropagate
@@ -79,7 +83,7 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 fun <T> playUCT(state: GameState<T>) {
 	while (!state.possible().empty) {
 		println(state)
-		val itermax = if (state.playerJustMoved == 1) 10 else 10
+		val itermax = if (state.playerJustMoved == 1) 1000 else 100
 		val m = UCT(rootstate = state, itermax = itermax, verbose = false)
 		println("Best Move: ${m}")
 		state.apply(m)

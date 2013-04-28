@@ -3,13 +3,15 @@ package com.github.nigelzor.hogs
 import java.util.HashSet
 import java.util.ArrayList
 import com.github.nigelzor.mcts.GameState
+import java.util.Random
+import com.github.nigelzor.mcts.random
 
 public data class Board: GameState<Move> {
 	override var playerJustMoved = 2 // TODO get rid of one of these
 	public var currentPlayer: Int = 0
 
 	private var players: List<Player>
-	private var homes: List<Home>
+	var homes: List<Home>
 	private var homeConnections: List<HomeConnection>
 	var tiles: ShiftMatrix<Tile>
 
@@ -62,11 +64,15 @@ public data class Board: GameState<Move> {
 	override fun result(playerJustMoved: Int): Double {
 		val pi = playerIndexFromPJM(playerJustMoved)
 		for (i in players.indices) {
-			if (players[i].collected.empty && homes[i].players.contains(players[i])) {
+			if (hasWon(i)) {
 				return if (i == pi) 1.0 else 0.0
 			}
 		}
 		throw IllegalStateException()
+	}
+
+	private fun hasWon(player: Int): Boolean {
+		return players[player].collected.size > 1 && homes[player].players.contains(player)
 	}
 
 	private fun playerIndexFromPJM(playerJustMoved: Int): Int {
@@ -76,20 +82,41 @@ public data class Board: GameState<Move> {
 	}
 
 	override fun possible(): Set<Move> {
-		var options: MutableSet<Move> = HashSet()
 		for (i in players.indices) {
-			if (players[i].collected.size == 4 && homes[i].players.contains(players[i])) {
-				return options; // game is over
+			if (hasWon(i)) {
+				return hashSetOf(); // game is over
 			}
 		}
 
-		//options.add(NoMove())
-		addWalkMoves(options, currentPlayer)
-		addRotateMoves(options)
+		var options = HashSet<Move>()
+		options.add(NoMove.INSTANCE)
+		options.addAll(addWalkMoves(currentPlayer))
+		options.addAll(addRotateMoves())
 		return options
 	}
 
-	private fun addRotateMoves(options: MutableSet<Move>) {
+	override fun randomMove(rng: Random): Move? {
+		for (i in players.indices) {
+			if (hasWon(i)) {
+				return null; // game is over
+			}
+		}
+
+		var kind = rng.nextInt(13)
+		if (kind < 6) {
+			var options = addWalkMoves(currentPlayer)
+			if (!options.empty) {
+				return random(options, rng)
+			}
+		} else if (kind < 12) {
+			var rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
+			return RotateMove(Index(rng.nextInt(ROWS), rng.nextInt(COLS)), rotation)
+		}
+		return NoMove.INSTANCE
+	}
+
+	private fun addRotateMoves(): Set<Move> {
+		var options = HashSet<Move>()
 		for (row in 0..ROWS - 1) {
 			for (col in 0..COLS - 1) {
 				val index = Index(row, col)
@@ -99,19 +126,21 @@ public data class Board: GameState<Move> {
 				options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
 			}
 		}
+		return options
 	}
 
-	private fun addWalkMoves(options: MutableSet<Move>, player: Int) {
+	private fun addWalkMoves(player: Int): Set<Move> {
 		fun canWalk(from: Set<Direction>, to: Set<Direction>): Boolean {
 			return from.any { to.contains(it.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)) }
 		}
 
+		var options = HashSet<Move>()
 		if (player in homes[player].players) {
 			val homeConnection = homeConnections[player]
 			val connectedIndex = homeConnection.index
 			val connectedTile = tiles[connectedIndex]
 			if (connectedTile != null && canWalk(homeConnection.connections, connectedTile.connections)) {
-				options.add(WalkMove({ it.homes[player] }, { it.tiles[connectedIndex]!! }))
+				options.add(HomeToTileWalkMove(player, connectedIndex))
 			}
 		} else {
 			val index = findPlayerTile(player)!!
@@ -121,15 +150,16 @@ public data class Board: GameState<Move> {
 				if (valid(connectedIndex)) {
 					val connectedTile = tiles[connectedIndex]!!
 					if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-						options.add(WalkMove({ it.tiles[index]!! }, { it.tiles[connectedIndex]!! }))
+						options.add(TileToTileWalkMove(index, connectedIndex))
 					}
 				}
 			}
 			val homeConnection = homeConnections[player]
 			if (index == homeConnection.index && canWalk(tile.connections, homeConnection.connections)) {
-				options.add(WalkMove({ it.tiles[index]!! }, { it.homes[player] }))
+				options.add(TileToHomeWalkMove(index, player))
 			}
 		}
+		return options
 	}
 
 	private fun valid(index: Index): Boolean {
@@ -163,6 +193,11 @@ public data class Board: GameState<Move> {
 	}
 
 	public fun print(out: Appendable) {
+		out.append("Players:")
+		for (i in players.indices) {
+			out.append(" %s=%s".format(i, players[i].collected))
+		}
+		out.append("\n")
 		for (row in 0..ROWS - 1) {
 			for (col in 0..COLS - 1) {
 				val tile = tiles[row, col]
