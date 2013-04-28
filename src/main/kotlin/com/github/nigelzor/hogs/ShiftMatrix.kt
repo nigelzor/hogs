@@ -82,7 +82,9 @@ public data class ShiftMatrix<T>(val rows: Int, val cols: Int, val values: Array
 	}
 
 	public fun clone(cloner: (T?) -> T? = { it }): ShiftMatrix<T> {
-		return ShiftMatrix<T>(rows, cols, values.map(cloner).toArray())
+		val newValues: Array<T?> = arrayOfNulls(values.size)
+		values.indices.forEach { newValues[it] = cloner(values[it]) }
+		return ShiftMatrix<T>(rows, cols, newValues)
 	}
 
 }

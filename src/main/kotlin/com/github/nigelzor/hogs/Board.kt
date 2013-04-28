@@ -1,6 +1,7 @@
 package com.github.nigelzor.hogs
 
 import java.util.HashSet
+import java.util.ArrayList
 import com.github.nigelzor.mcts.GameState
 
 public data class Board: GameState<Move> {
@@ -15,7 +16,7 @@ public data class Board: GameState<Move> {
 	{
 		players = Colour.values().map { Player(it) }
 		// map { (i, player) -> ... } would be nice, but no
-		homes = players.withIndices().map { Home(it.second.colour, hashSetOf(it.first)) }
+		homes = players.indices.mapTo(ArrayList<Home>(), { Home(players[it].colour, hashSetOf(it)) })
 		homeConnections = listOf(
 				HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
 				HomeConnection(0, COLS - 1, setOf(Direction.SOUTH, Direction.WEST)),

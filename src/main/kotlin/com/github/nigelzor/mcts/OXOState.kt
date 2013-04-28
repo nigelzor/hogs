@@ -1,7 +1,5 @@
 package com.github.nigelzor.mcts
 
-import kotlin.nullable.toSet
-
 public class OXOState: GameState<Int> {
 	override var playerJustMoved = 2
 	var board = array(0,0,0,0,0,0,0,0,0)
@@ -20,7 +18,7 @@ public class OXOState: GameState<Int> {
 	}
 
 	override fun possible(): Set<Int> {
-		return board.indices.filter { board[it] == 0 }.toSet()
+		return board.indices.iterator().filter { (idx : Int): Boolean -> board[idx] == 0 }.toSet()
 	}
 
 	override fun result(playerJustMoved: Int): Double {
