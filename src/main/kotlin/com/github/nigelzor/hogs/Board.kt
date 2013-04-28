@@ -153,9 +153,9 @@ public data class Board: GameState<Move> {
 		for (row in 0..ROWS - 1) {
 			for (col in 0..COLS - 1) {
 				val tile = tiles[row, col]
-				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
+				out.append(if (tile?.players?.contains(0) == true) '0' else ' ')
 				out.append(if (tile?.connectsTo(Direction.NORTH) == true) 'X' else ' ')
-				out.append(if (tile?.players?.contains(2) == true) '2' else ' ')
+				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
 			}
 			out.append("\n")
 			for (col in 0..COLS - 1) {
@@ -171,9 +171,9 @@ public data class Board: GameState<Move> {
 			out.append("\n")
 			for (col in 0..COLS - 1) {
 				val tile = tiles[row, col]
-				out.append(if (tile?.players?.contains(4) == true) '4' else ' ')
-				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
 				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
+				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
+				out.append(if (tile?.players?.contains(2) == true) '2' else ' ')
 			}
 			out.append("\n")
 		}
