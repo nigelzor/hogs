@@ -11,7 +11,7 @@ public data class Board: GameState<Move> {
 	private var players: List<Player>
 	private var homes: List<Home>
 	private var homeConnections: List<HomeConnection>
-	private var tiles: ShiftMatrix<Tile>
+	var tiles: ShiftMatrix<Tile>
 
 	{
 		players = Colour.values().map { Player(it) }
@@ -78,14 +78,27 @@ public data class Board: GameState<Move> {
 	override fun possible(): Set<Move> {
 		var options: MutableSet<Move> = HashSet()
 		for (i in players.indices) {
-			if (players[i].collected.size < 4 && homes[i].players.contains(players[i])) {
+			if (players[i].collected.size == 4 && homes[i].players.contains(players[i])) {
 				return options; // game is over
 			}
 		}
 
 		//options.add(NoMove())
 		addWalkMoves(options, currentPlayer)
+		addRotateMoves(options)
 		return options
+	}
+
+	private fun addRotateMoves(options: MutableSet<Move>) {
+		for (row in 0..ROWS - 1) {
+			for (col in 0..COLS - 1) {
+				val index = Index(row, col)
+				// TODO-NG: limit rotations for symmetric tiles
+				options.add(RotateMove(index, Rotation.NINETY_DEGREES))
+				options.add(RotateMove(index, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
+				options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
+			}
+		}
 	}
 
 	private fun addWalkMoves(options: MutableSet<Move>, player: Int) {
