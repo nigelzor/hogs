@@ -9,7 +9,7 @@
 	<url>http://nigelzor.ath.cx</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<kotlin.version>0.5.429</kotlin.version>
+		<kotlin.version>0.5.748</kotlin.version>
 	</properties>
 	<dependencies>
 		<dependency>
