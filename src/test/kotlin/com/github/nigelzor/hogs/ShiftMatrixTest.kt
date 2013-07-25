@@ -56,7 +56,7 @@ public class ShiftMatrixTest {
 		var moving = fill(ShiftMatrix<String>(1, 3))
 		moving[0, 0] = null
 		moving.shift(0, 1)
-		var expected = ShiftMatrix<String?>(1, 3)
+		var expected = ShiftMatrix<String>(1, 3)
 		expected[0, 0] = "B"
 		expected[0, 1] = null
 		expected[0, 2] = "C"

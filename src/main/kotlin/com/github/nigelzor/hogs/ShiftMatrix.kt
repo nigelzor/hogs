@@ -2,7 +2,7 @@ package com.github.nigelzor.hogs
 
 import com.google.common.base.Preconditions
 
-public data class ShiftMatrix<T>(val rows: Int, val cols: Int, val values: Array<T?> = arrayOfNulls(rows * cols)) {
+public data class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?> = arrayOfNulls(rows * cols)) {
 	{
 		Preconditions.checkArgument(values.size == rows * cols, "values")
 	}

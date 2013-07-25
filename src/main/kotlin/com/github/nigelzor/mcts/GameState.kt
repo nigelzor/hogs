@@ -2,7 +2,7 @@ package com.github.nigelzor.mcts
 
 import java.util.Random
 
-public trait GameState<Move> {
+public trait GameState<Move: Any> {
 	val playerJustMoved: Int
 	fun clone(): GameState<Move> // should return This (once implemented)
 	fun apply(move: Move)

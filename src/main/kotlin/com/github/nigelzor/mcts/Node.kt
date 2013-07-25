@@ -3,7 +3,7 @@ package com.github.nigelzor.mcts
 import java.util.ArrayList
 import java.util.HashSet
 
-public class Node<Move>(move: Move? = null, parent: Node<Move>? = null, state: GameState<Move>) {
+public class Node<Move: Any>(move: Move? = null, parent: Node<Move>? = null, state: GameState<Move>) {
 	val move = move
 	val parentNode = parent
 	val childNodes: MutableList<Node<Move>> = ArrayList()

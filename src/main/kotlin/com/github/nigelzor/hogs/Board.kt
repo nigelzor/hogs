@@ -239,9 +239,9 @@ public data class Board: GameState<Move> {
 				if (tile == null) {
 					out.append(" / ")
 				} else {
-					out.append(if (tile?.connectsTo(Direction.WEST) == true) 'X' else ' ')
-					out.append(if (tile?.objective != null) 'G' else 'X')
-					out.append(if (tile?.connectsTo(Direction.EAST) == true) 'X' else ' ')
+					out.append(if (tile.connectsTo(Direction.WEST) == true) 'X' else ' ')
+					out.append(if (tile.objective != null) 'G' else 'X')
+					out.append(if (tile.connectsTo(Direction.EAST) == true) 'X' else ' ')
 				}
 			}
 			out.append("\n")
