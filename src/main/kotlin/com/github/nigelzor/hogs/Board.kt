@@ -7,8 +7,14 @@ import java.util.Random
 import com.github.nigelzor.mcts.random
 
 public data class Board: GameState<Move> {
-	override var playerJustMoved = 2 // TODO get rid of one of these
-	public var currentPlayer: Int = 0
+	override var playerJustMoved = 2 // UCT player: { 1, 2 }
+
+	val piToMove: Int // hogs player: { 0..3 }
+		get() {
+			if (playerJustMoved == 1) return 2
+			if (playerJustMoved == 2) return 0
+			throw IllegalStateException()
+		}
 
 	private var players: List<Player>
 	var homes: List<Home>
@@ -48,6 +54,8 @@ public data class Board: GameState<Move> {
 		val PLAYERS: Int = 4
 		val ROWS: Int = 4
 		val COLS: Int = 4
+
+		val BRAINDEAD: Int = -1
 	}
 
 	private fun findPlayerTile(player: Int): Index? {
@@ -62,7 +70,10 @@ public data class Board: GameState<Move> {
 	}
 
 	override fun result(playerJustMoved: Int): Double {
-		val pi = playerIndexFromPJM(playerJustMoved)
+		val pi = if (playerJustMoved == 1) 0
+			else if (playerJustMoved == 2) 2
+			else throw IllegalStateException()
+
 		for (i in players.indices) {
 			if (hasWon(i)) {
 				return if (i == pi) 1.0 else 0.0
@@ -75,12 +86,6 @@ public data class Board: GameState<Move> {
 		return players[player].collected.size > 1 && homes[player].players.contains(player)
 	}
 
-	private fun playerIndexFromPJM(playerJustMoved: Int): Int {
-		if (playerJustMoved == 1) return 0
-		if (playerJustMoved == 2) return 2
-		throw IllegalStateException()
-	}
-
 	override fun possible(): Set<Move> {
 		for (i in players.indices) {
 			if (hasWon(i)) {
@@ -90,7 +95,8 @@ public data class Board: GameState<Move> {
 
 		var options = HashSet<Move>()
 		options.add(NoMove.INSTANCE)
-		options.addAll(addWalkMoves(currentPlayer))
+		if (piToMove == BRAINDEAD) return options
+		options.addAll(addWalkMoves(piToMove))
 		options.addAll(addRotateMoves())
 		return options
 	}
@@ -102,9 +108,11 @@ public data class Board: GameState<Move> {
 			}
 		}
 
+		if (piToMove == BRAINDEAD) return NoMove.INSTANCE
+
 		var kind = rng.nextInt(13)
 		if (kind < 6) {
-			var options = addWalkMoves(currentPlayer)
+			var options = addWalkMoves(piToMove)
 			if (!options.empty) {
 				return random(options, rng)
 			}
@@ -189,9 +197,8 @@ public data class Board: GameState<Move> {
 	}
 
 	override fun apply(move: Move) {
-		playerJustMoved = 3 - playerJustMoved
 		move.apply(this)
-		currentPlayer = playerIndexFromPJM(playerJustMoved)
+		playerJustMoved = 3 - playerJustMoved
 		for (row in 0..ROWS - 1) {
 			for (col in 0..COLS - 1) {
 				val tile = tiles[row, col]!!
@@ -207,7 +214,6 @@ public data class Board: GameState<Move> {
 	override fun clone(): Board {
 		val clone = Board()
 		clone.playerJustMoved = playerJustMoved
-		clone.currentPlayer = currentPlayer
 		clone.players = players.map { it.clone() }
 		clone.homes = homes.map { it.clone() }
 		clone.tiles = tiles.clone({ it?.clone() })
