@@ -129,35 +129,57 @@ public data class Board: GameState<Move> {
 		return options
 	}
 
-	private fun addWalkMoves(player: Int): Set<Move> {
-		fun canWalk(from: Set<Direction>, to: Set<Direction>): Boolean {
-			return from.any { to.contains(it.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)) }
+	private fun canWalk(from: Set<Direction>, to: Set<Direction>): Boolean {
+		return from.any { to.contains(it.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)) }
+	}
+
+	private fun addWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
+
+		fun addHomeToTileWalkMoves(homeConnection: HomeConnection, options: MutableCollection<Move>) {
+			val connectedIndex = homeConnection.index
+			val connectedTile = tiles[connectedIndex]
+			if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile.connections))) {
+				options.add(HomeToTileWalkMove(player, connectedIndex))
+			}
+		}
+
+		fun addTileToTileWalkMoves(index: Index, options: MutableCollection<Move>) {
+			if (sneak) {
+				for (direction in Direction.values()) {
+					val connectedIndex = direction.apply(index)
+					if (valid(connectedIndex)) {
+						options.add(TileToTileWalkMove(index, connectedIndex))
+					}
+				}
+			} else {
+				val tile = tiles[index]!!
+				for (direction in tile.connections) {
+					val connectedIndex = direction.apply(index)
+					if (valid(connectedIndex)) {
+						val connectedTile = tiles[connectedIndex]!!
+						if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
+							options.add(TileToTileWalkMove(index, connectedIndex))
+						}
+					}
+				}
+			}
+		}
+
+		fun addTileToHomeWalkMoves(index: Index, options: MutableCollection<Move>) {
+			val tile = tiles[index]!!
+			val homeConnection = homeConnections[player]
+			if (index == homeConnection.index && (sneak || canWalk(tile.connections, homeConnection.connections))) {
+				options.add(TileToHomeWalkMove(index, player))
+			}
 		}
 
 		var options = HashSet<Move>()
 		if (player in homes[player].players) {
-			val homeConnection = homeConnections[player]
-			val connectedIndex = homeConnection.index
-			val connectedTile = tiles[connectedIndex]
-			if (connectedTile != null && canWalk(homeConnection.connections, connectedTile.connections)) {
-				options.add(HomeToTileWalkMove(player, connectedIndex))
-			}
+			addHomeToTileWalkMoves(homeConnections[player], options)
 		} else {
 			val index = findPlayerTile(player)!!
-			val tile = tiles[index]!!
-			for (direction in tile.connections) {
-				val connectedIndex = direction.apply(index)
-				if (valid(connectedIndex)) {
-					val connectedTile = tiles[connectedIndex]!!
-					if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-						options.add(TileToTileWalkMove(index, connectedIndex))
-					}
-				}
-			}
-			val homeConnection = homeConnections[player]
-			if (index == homeConnection.index && canWalk(tile.connections, homeConnection.connections)) {
-				options.add(TileToHomeWalkMove(index, player))
-			}
+			addTileToTileWalkMoves(index, options)
+			addTileToHomeWalkMoves(index, options)
 		}
 		return options
 	}
