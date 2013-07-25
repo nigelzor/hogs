@@ -9,6 +9,7 @@ public class BoardTest {
 	public fun testFirstTurnWalkingMoves() {
 		var board = Board()
 		var potentialMoves = board.possible()
-		assertThat(potentialMoves, hasSize(2))
+		// NoMove, Walk(Home->Board), 3 rotations of every tile
+		assertThat(potentialMoves, hasSize(1 + 1 + 3 * 16))
 	}
 }
