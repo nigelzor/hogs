@@ -85,12 +85,29 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 
 }
 
+fun formatNanos(nanos: Long): String {
+	if (nanos < 1000) {
+		return "${nanos} ns"
+	}
+	val micros = nanos / 1000.0
+	if (micros < 1000) {
+		return "${micros} us"
+	}
+	val millis = micros / 1000.0
+	if (millis < 1000) {
+		return "${millis} ms"
+	}
+	val secs = millis / 1000.0
+	return "${secs} s"
+}
+
 fun <T> playUCT(state: GameState<T>) {
 	while (!state.possible().empty) {
 		println(state)
 		val itermax = if (state.playerJustMoved == 1) 1000 else 100
+		val now = System.nanoTime()
 		val m = UCT(rootstate = state, itermax = itermax, verbose = false)
-		println("Best Move: ${m}")
+		println("Best Move: ${m} in ${formatNanos(System.nanoTime() - now)}")
 		state.apply(m)
 	}
 	if (state.result(state.playerJustMoved) == 1.0)
