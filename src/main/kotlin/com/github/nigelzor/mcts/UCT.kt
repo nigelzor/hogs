@@ -20,10 +20,15 @@ package com.github.nigelzor.mcts
  */
 
 import java.util.Random
+import com.google.common.collect.Iterables
 
 val random = Random()
-fun <T> random(values: Set<T>, rng: Random = random): T {
-	return values.toList()[rng.nextInt(values.size())]
+fun <T: Any> random(values: Collection<T>, rng: Random = random): T {
+	return Iterables.get(values, rng.nextInt(values.size))!!
+}
+
+fun <T> random(values: List<T>, rng: Random = random): T {
+	return values[rng.nextInt(values.size())]
 }
 
 /**

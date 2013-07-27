@@ -3,8 +3,19 @@ package com.github.nigelzor.hogs
 import com.google.common.base.Preconditions
 
 public data class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?> = arrayOfNulls(rows * cols)) {
+	public val indicies: Collection<Index>
 	{
 		Preconditions.checkArgument(values.size == rows * cols, "values")
+		val b: ImmutableArrayListBuilder<Index> = listBuilder()
+		b.ensureCapacity(rows * cols)
+		for (x in rows.indices)
+			for (y in cols.indices)
+				b.add(Index(x, y))
+		indicies = b.build()
+	}
+
+	public fun contains(index: Index): Boolean {
+		return index.row >= 0 && index.row < rows && index.col >= 0 && index.col < cols
 	}
 
 	public fun get(index: Index): T? {

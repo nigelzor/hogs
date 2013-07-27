@@ -6,7 +6,7 @@ import com.github.nigelzor.mcts.GameState
 import java.util.Random
 import com.github.nigelzor.mcts.random
 
-public data class Board: GameState<Move> {
+public data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<Tile>): GameState<Move> {
 	override var playerJustMoved = 2 // UCT player: { 1, 2 }
 
 	val piToMove: Int // hogs player: { 0..3 }
@@ -18,52 +18,66 @@ public data class Board: GameState<Move> {
 
 	private var players: List<Player>
 	var homes: List<Home>
-	private var homeConnections: List<HomeConnection>
-	var tiles: ShiftMatrix<Tile>
-
 	{
 		players = Colour.values().map { Player(it) }
 		// map { (i, player) -> ... } would be nice, but no
 		homes = players.indices.mapTo(ArrayList<Home>(), { Home(players[it].colour, hashSetOf(it)) })
-		homeConnections = listOf(
-				HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
-				HomeConnection(0, COLS - 1, setOf(Direction.SOUTH, Direction.WEST)),
-				HomeConnection(ROWS - 1, COLS - 1, setOf(Direction.NORTH, Direction.WEST)),
-				HomeConnection(ROWS - 1, 0, setOf(Direction.NORTH, Direction.EAST)))
-
-		tiles = ShiftMatrix<Tile>(ROWS, COLS)
-		tiles[0, 0] = TileFactory.tee()
-		tiles[1, 0] = TileFactory.straight().rotate(Rotation.NINETY_DEGREES)
-		tiles[2, 0] = TileFactory.elbow().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
-		tiles[0, 3] = TileFactory.tee().rotate(Rotation.NINETY_DEGREES)
-		tiles[0, 2] = TileFactory.straight()
-		tiles[0, 1] = TileFactory.elbow().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
-		tiles[3, 3] = TileFactory.tee().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
-		tiles[2, 3] = TileFactory.straight().rotate(Rotation.NINETY_DEGREES)
-		tiles[1, 3] = TileFactory.elbow()
-		tiles[3, 0] = TileFactory.tee().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
-		tiles[3, 1] = TileFactory.straight()
-		tiles[3, 2] = TileFactory.elbow().rotate(Rotation.NINETY_DEGREES)
-		tiles[1, 1] = TileFactory.tower().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
-		tiles[1, 2] = TileFactory.homework()
-		tiles[2, 2] = TileFactory.potions()
-		tiles[2, 1] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
 	}
 
 	class object {
 		val PLAYERS: Int = 4
-		val ROWS: Int = 4
-		val COLS: Int = 4
 
 		val BRAINDEAD: Int = -1
+
+		fun tinyBoard(): Board {
+			val homeConnections = listOf(
+					HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
+					HomeConnection(0, 1, setOf(Direction.SOUTH, Direction.WEST)),
+					HomeConnection(1, 1, setOf(Direction.NORTH, Direction.WEST)),
+					HomeConnection(1, 0, setOf(Direction.NORTH, Direction.EAST)))
+
+			val tiles = ShiftMatrix<Tile>(2, 2)
+			tiles[0, 0] = TileFactory.tower().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
+			tiles[0, 1] = TileFactory.homework()
+			tiles[1, 1] = TileFactory.potions()
+			tiles[1, 0] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
+
+			return Board(homeConnections, tiles)
+		}
+
+		fun defaultBoard(): Board {
+			val homeConnections = listOf(
+					HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
+					HomeConnection(0, 3, setOf(Direction.SOUTH, Direction.WEST)),
+					HomeConnection(3, 3, setOf(Direction.NORTH, Direction.WEST)),
+					HomeConnection(3, 0, setOf(Direction.NORTH, Direction.EAST)))
+
+			val tiles = ShiftMatrix<Tile>(4, 4)
+			tiles[0, 0] = TileFactory.tee()
+			tiles[1, 0] = TileFactory.straight().rotate(Rotation.NINETY_DEGREES)
+			tiles[2, 0] = TileFactory.elbow().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
+			tiles[0, 3] = TileFactory.tee().rotate(Rotation.NINETY_DEGREES)
+			tiles[0, 2] = TileFactory.straight()
+			tiles[0, 1] = TileFactory.elbow().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
+			tiles[3, 3] = TileFactory.tee().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
+			tiles[2, 3] = TileFactory.straight().rotate(Rotation.NINETY_DEGREES)
+			tiles[1, 3] = TileFactory.elbow()
+			tiles[3, 0] = TileFactory.tee().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
+			tiles[3, 1] = TileFactory.straight()
+			tiles[3, 2] = TileFactory.elbow().rotate(Rotation.NINETY_DEGREES)
+			tiles[1, 1] = TileFactory.tower().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
+			tiles[1, 2] = TileFactory.homework()
+			tiles[2, 2] = TileFactory.potions()
+			tiles[2, 1] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
+
+			return Board(homeConnections, tiles)
+		}
 	}
 
 	private fun findPlayerTile(player: Int): Index? {
-		for (row in 0..ROWS - 1) {
-			for (col in 0..COLS - 1) {
-				if (tiles[row, col]?.players?.contains(player) == true) {
-					return Index(row, col)
-				}
+		for (index in tiles.indicies) {
+			if (tiles[index]?.players?.contains(player) == true) {
+				return index
 			}
 		}
 		return null
@@ -118,21 +132,18 @@ public data class Board: GameState<Move> {
 			}
 		} else if (kind < 12) {
 			var rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
-			return RotateMove(Index(rng.nextInt(ROWS), rng.nextInt(COLS)), rotation)
+			return RotateMove(random(tiles.indicies, rng), rotation)
 		}
 		return NoMove.INSTANCE
 	}
 
 	private fun addRotateMoves(): Set<Move> {
 		var options = HashSet<Move>()
-		for (row in 0..ROWS - 1) {
-			for (col in 0..COLS - 1) {
-				val index = Index(row, col)
-				// TODO-NG: limit rotations for symmetric tiles
-				options.add(RotateMove(index, Rotation.NINETY_DEGREES))
-				options.add(RotateMove(index, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
-				options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
-			}
+		for (index in tiles.indicies) {
+			// TODO-NG: limit rotations for symmetric tiles
+			options.add(RotateMove(index, Rotation.NINETY_DEGREES))
+			options.add(RotateMove(index, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
+			options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
 		}
 		return options
 	}
@@ -193,30 +204,27 @@ public data class Board: GameState<Move> {
 	}
 
 	private fun valid(index: Index): Boolean {
-		return index.row >= 0 && index.row < ROWS && index.col >= 0 && index.col < COLS
+		return tiles.contains(index)
 	}
 
 	override fun apply(move: Move) {
 		move.apply(this)
 		playerJustMoved = 3 - playerJustMoved
-		for (row in 0..ROWS - 1) {
-			for (col in 0..COLS - 1) {
-				val tile = tiles[row, col]!!
-				if (tile.objective != null) {
-					for (player in tile.players) {
-						players[player].collected.add(tile.objective)
-					}
+		for (index in tiles.indicies) {
+			val tile = tiles[index]!!
+			if (tile.objective != null) {
+				for (player in tile.players) {
+					players[player].collected.add(tile.objective)
 				}
 			}
 		}
 	}
 
 	override fun clone(): Board {
-		val clone = Board()
+		val clone = Board(homeConnections, tiles.clone { it?.clone() })
 		clone.playerJustMoved = playerJustMoved
 		clone.players = players.map { it.clone() }
 		clone.homes = homes.map { it.clone() }
-		clone.tiles = tiles.clone({ it?.clone() })
 		return clone
 	}
 
@@ -226,15 +234,15 @@ public data class Board: GameState<Move> {
 			out.append(" %s=%s".format(i, players[i].collected))
 		}
 		out.append("\n")
-		for (row in 0..ROWS - 1) {
-			for (col in 0..COLS - 1) {
+		for (row in tiles.rows.indices) {
+			for (col in tiles.cols.indices) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(0) == true) '0' else ' ')
 				out.append(if (tile?.connectsTo(Direction.NORTH) == true) 'X' else ' ')
 				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
 			}
 			out.append("\n")
-			for (col in 0..COLS - 1) {
+			for (col in tiles.cols.indices) {
 				val tile = tiles[row, col]
 				if (tile == null) {
 					out.append(" / ")
@@ -245,7 +253,7 @@ public data class Board: GameState<Move> {
 				}
 			}
 			out.append("\n")
-			for (col in 0..COLS - 1) {
+			for (col in tiles.cols.indices) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
 				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
