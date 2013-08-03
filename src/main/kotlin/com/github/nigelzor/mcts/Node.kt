@@ -29,7 +29,7 @@ public class Node<Move: Any>(move: Move? = null, parent: Node<Move>? = null, sta
 	}
 
 	fun toString(): String {
-		return "[M:${move} W/V:${wins}/${visits} U:${untriedMoves}]"
+		return "[M:${move} W/V:${wins}/${visits}=${formatThree((100.0 * wins)/visits)}% U:${untriedMoves}]"
 	}
 
 }

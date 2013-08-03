@@ -3,25 +3,25 @@ package com.github.nigelzor.hogs
 public class TileFactory() {
 	class object {
 		public fun straight(): Tile {
-			return Tile(hashSetOf(Direction.WEST, Direction.EAST))
+			return Tile.fromDirections(Direction.WEST, Direction.EAST)
 		}
 		public fun elbow(): Tile {
-			return Tile(hashSetOf(Direction.WEST, Direction.SOUTH))
+			return Tile.fromDirections(Direction.WEST, Direction.SOUTH)
 		}
 		public fun tee(): Tile {
-			return Tile(hashSetOf(Direction.WEST, Direction.SOUTH, Direction.EAST))
+			return Tile.fromDirections(Direction.WEST, Direction.SOUTH, Direction.EAST)
 		}
 		public fun homework(): Tile {
-			return Tile(hashSetOf(Direction.WEST, Direction.EAST), Objective.ONE)
+			return Tile.fromDirections(Direction.WEST, Direction.EAST).copy(objective = Objective.ONE)
 		}
 		public fun potions(): Tile {
-			return Tile(hashSetOf(Direction.NORTH, Direction.SOUTH), Objective.TWO)
+			return Tile.fromDirections(Direction.NORTH, Direction.SOUTH).copy(objective = Objective.TWO)
 		}
 		public fun creatures(): Tile {
-			return Tile(hashSetOf(Direction.NORTH, Direction.EAST), Objective.THREE)
+			return Tile.fromDirections(Direction.NORTH, Direction.EAST).copy(objective = Objective.THREE)
 		}
 		public fun tower(): Tile {
-			return Tile(hashSetOf(Direction.SOUTH), Objective.FOUR)
+			return Tile.fromDirections(Direction.SOUTH).copy(objective = Objective.FOUR)
 		}
 	}
 }

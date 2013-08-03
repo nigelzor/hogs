@@ -77,45 +77,65 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 		}
 	}
 
-	// if (verbose) ...
-	println(rootnode.childNodes.makeString("\n"));
-
 	// return the most-visited node
-	return rootnode.childNodes.sortBy { it.visits }.last!!.move!!
+	val sortedMoves = rootnode.childNodes.sortBy { it.visits }
 
+	// if (verbose) ...
+	println(sortedMoves.makeString("\n"));
+
+	return sortedMoves.last!!.move!!
 }
 
 fun formatNanos(nanos: Long): String {
 	if (nanos < 1000) {
-		return "${nanos} ns"
+		return "${formatThree(nanos.toDouble())} ns"
 	}
 	val micros = nanos / 1000.0
 	if (micros < 1000) {
-		return "${micros} us"
+		return "${formatThree(micros)} us"
 	}
 	val millis = micros / 1000.0
 	if (millis < 1000) {
-		return "${millis} ms"
+		return "${formatThree(millis)} ms"
 	}
 	val secs = millis / 1000.0
-	return "${secs} s"
+	return "${formatThree(secs)} s"
+}
+
+fun formatThree(num: Double): String {
+	if (num >= 100)
+		return "%.0f".format(num)
+	if (num >= 10)
+		return "%.1f".format(num)
+	if (num >= 1)
+		return "%.2f".format(num)
+	return "%1.3f".format(num)
 }
 
 fun <T> playUCT(state: GameState<T>) {
-	while (!state.possible().empty) {
-		println(state)
-		val itermax = if (state.playerJustMoved == 1) 1000 else 100
-		val now = System.nanoTime()
-		val m = UCT(rootstate = state, itermax = itermax, verbose = false)
-		println("Best Move: ${m} in ${formatNanos(System.nanoTime() - now)}")
-		state.apply(m)
-	}
-	if (state.result(state.playerJustMoved) == 1.0)
-		println("Player ${state.playerJustMoved} wins!")
-	else if (state.result(state.playerJustMoved) == 0.0)
-		println("Player ${3 - state.playerJustMoved} wins!")
-	else
-		println("Nobody wins!")
+	val startOfGame = System.nanoTime()
+	var turn = 0
+	@sim do {
+		while (!state.possible().empty) {
+			println(state)
+			val itermax = if (state.playerJustMoved == 1) 2000 else 500
+			val startOfTurn = System.nanoTime()
+			val m = UCT(rootstate = state, itermax = itermax, verbose = false)
+			println("Turn ${turn++} Best Move: ${m} in ${formatNanos(System.nanoTime() - startOfTurn)}")
+			state.apply(m)
+			if (turn > 30) {
+				println("Out of time!")
+				break @sim
+			}
+		}
+		if (state.result(state.playerJustMoved) == 1.0)
+			println("Player ${state.playerJustMoved} wins!")
+		else if (state.result(state.playerJustMoved) == 0.0)
+			println("Player ${3 - state.playerJustMoved} wins!")
+		else
+			println("Nobody wins!")
+	} while (false);
+	println("Total time: ${formatNanos(System.nanoTime() - startOfGame)}")
 }
 
 fun main(args: Array<String>) {

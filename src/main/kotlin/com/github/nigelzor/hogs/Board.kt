@@ -6,6 +6,8 @@ import com.github.nigelzor.mcts.GameState
 import java.util.Random
 import com.github.nigelzor.mcts.random
 
+import jet.Int as BTile
+
 public data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<Tile>): GameState<Move> {
 	override var playerJustMoved = 2 // UCT player: { 1, 2 }
 
@@ -124,21 +126,43 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 
 		if (piToMove == BRAINDEAD) return NoMove.INSTANCE
 
-		var kind = rng.nextInt(13)
-		if (kind < 6) {
+		var kind = rng.nextInt(2)
+		if (kind == 0) {
 			var options = addWalkMoves(piToMove)
 			if (!options.empty) {
 				return random(options, rng)
 			}
-		} else if (kind < 12) {
+		} else if (kind == 1) {
 			var rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
 			return RotateMove(random(tiles.indicies, rng), rotation)
 		}
 		return NoMove.INSTANCE
 	}
 
-	private fun addRotateMoves(): Set<Move> {
-		var options = HashSet<Move>()
+	private fun touchesTile(tile: Index, move: Move): Boolean {
+		if (move is TileToTileWalkMove) {
+			return move.from == tile || move.to == tile
+		} else if (move is HomeToTileWalkMove) {
+			return move.to == tile
+		} else if (move is TileToHomeWalkMove) {
+			return move.from == tile
+		}
+		throw UnsupportedOperationException("Unhandled move type " + move)
+	}
+
+//	private fun addRotateWalkMoves(player: Int) {
+//		val defaultWalkMoves = addWalkMoves(player)
+//		val allRotations = addRotateMoves();
+//		for (rotation in allRotations) {
+//			val walkMoves = defaultWalkMoves.filterTo(HashSet<Move>(), {
+//				touchesTile(rotation.index, it)
+//			}
+//			addTileToHomeWalkMoves(player. rotation.index, walkMoves)
+//		}
+//	}
+
+	private fun addRotateMoves(): Set<RotateMove> {
+		var options = HashSet<RotateMove>()
 		for (index in tiles.indicies) {
 			// TODO-NG: limit rotations for symmetric tiles
 			options.add(RotateMove(index, Rotation.NINETY_DEGREES))
@@ -148,57 +172,69 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 		return options
 	}
 
+	/**
+	 * only applicable for board-home transitions
+	 * tile-to-tile walks need to consider the relative position of the tiles (my NORTH doesn't match your SOUTH unless
+	 * you're directly below me).
+	 */
 	private fun canWalk(from: Set<Direction>, to: Set<Direction>): Boolean {
 		return from.any { to.contains(it.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)) }
 	}
 
-	private fun addWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
+	private fun canWalk(from: Set<Direction>, to: BTile): Boolean {
+		return canWalk(from, BTiles.toDirections(to))
+	}
 
-		fun addHomeToTileWalkMoves(homeConnection: HomeConnection, options: MutableCollection<Move>) {
-			val connectedIndex = homeConnection.index
-			val connectedTile = tiles[connectedIndex]
-			if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile.connections))) {
-				options.add(HomeToTileWalkMove(player, connectedIndex))
-			}
+	private fun canWalk(from: BTile, to: Set<Direction>): Boolean {
+		return canWalk(BTiles.toDirections(from), to)
+	}
+
+	fun addHomeToTileWalkMoves(player: Int, homeConnection: HomeConnection, sneak: Boolean = false, options: MutableCollection<Move>) {
+		val connectedIndex = homeConnection.index
+		val connectedTile = tiles[connectedIndex]
+		if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile.connections))) {
+			options.add(HomeToTileWalkMove(player, connectedIndex))
 		}
+	}
 
-		fun addTileToTileWalkMoves(index: Index, options: MutableCollection<Move>) {
-			if (sneak) {
-				for (direction in Direction.values()) {
-					val connectedIndex = direction.apply(index)
-					if (valid(connectedIndex)) {
+	fun addTileToTileWalkMoves(index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
+		if (sneak) {
+			for (direction in Direction.values()) {
+				val connectedIndex = direction.apply(index)
+				if (valid(connectedIndex)) {
+					options.add(TileToTileWalkMove(index, connectedIndex))
+				}
+			}
+		} else {
+			val tile = tiles[index]!!
+			BTiles.eachDirection(tile.connections) { direction ->
+				val connectedIndex = direction.apply(index)
+				if (valid(connectedIndex)) {
+					val connectedTile = tiles[connectedIndex]!!
+					if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
 						options.add(TileToTileWalkMove(index, connectedIndex))
 					}
 				}
-			} else {
-				val tile = tiles[index]!!
-				for (direction in tile.connections) {
-					val connectedIndex = direction.apply(index)
-					if (valid(connectedIndex)) {
-						val connectedTile = tiles[connectedIndex]!!
-						if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
-							options.add(TileToTileWalkMove(index, connectedIndex))
-						}
-					}
-				}
 			}
 		}
+	}
 
-		fun addTileToHomeWalkMoves(index: Index, options: MutableCollection<Move>) {
-			val tile = tiles[index]!!
-			val homeConnection = homeConnections[player]
-			if (index == homeConnection.index && (sneak || canWalk(tile.connections, homeConnection.connections))) {
-				options.add(TileToHomeWalkMove(index, player))
-			}
+	private fun addTileToHomeWalkMoves(player: Int, index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
+		val tile = tiles[index]!!
+		val homeConnection = homeConnections[player]
+		if (index == homeConnection.index && (sneak || canWalk(tile.connections, homeConnection.connections))) {
+			options.add(TileToHomeWalkMove(index, player))
 		}
+	}
 
+	private fun addWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
 		var options = HashSet<Move>()
 		if (player in homes[player].players) {
-			addHomeToTileWalkMoves(homeConnections[player], options)
+			addHomeToTileWalkMoves(player, homeConnections[player], sneak, options)
 		} else {
 			val index = findPlayerTile(player)!!
-			addTileToTileWalkMoves(index, options)
-			addTileToHomeWalkMoves(index, options)
+			addTileToTileWalkMoves(index, sneak, options)
+			addTileToHomeWalkMoves(player, index, sneak, options)
 		}
 		return options
 	}
