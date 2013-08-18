@@ -32,7 +32,7 @@ public data class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: 
 		return set(index.row, index.col, value)
 	}
 
-	public fun set(row: Int, col: Int, value: T?): Unit {
+	public fun set(row: Int, col: Int, value: T?) {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		values[row * cols + col] = value
@@ -40,7 +40,7 @@ public data class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: 
 
 	// the order that directions are checked is arbitrary; so long as there's only one space
 	// free, there won't be any alternatives
-	public fun shift(row: Int, col: Int): Unit {
+	public fun shift(row: Int, col: Int) {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		var i: Int

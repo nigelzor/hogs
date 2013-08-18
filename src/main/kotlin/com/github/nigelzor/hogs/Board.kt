@@ -150,16 +150,16 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 		throw UnsupportedOperationException("Unhandled move type " + move)
 	}
 
-//	private fun addRotateWalkMoves(player: Int) {
-//		val defaultWalkMoves = addWalkMoves(player)
-//		val allRotations = addRotateMoves();
-//		for (rotation in allRotations) {
-//			val walkMoves = defaultWalkMoves.filterTo(HashSet<Move>(), {
-//				touchesTile(rotation.index, it)
-//			}
-//			addTileToHomeWalkMoves(player. rotation.index, walkMoves)
-//		}
-//	}
+	private fun addRotateWalkMoves(player: Int) {
+		val defaultWalkMoves = addWalkMoves(player)
+		val allRotations = addRotateMoves()
+		for (rotation in allRotations) {
+			val walkMoves = defaultWalkMoves.filterTo(HashSet<Move>()) {
+				touchesTile(rotation.index, it)
+			}
+			addTileToHomeWalkMoves(player, rotation.index, options=walkMoves)
+		}
+	}
 
 	private fun addRotateMoves(): Set<RotateMove> {
 		var options = HashSet<RotateMove>()
