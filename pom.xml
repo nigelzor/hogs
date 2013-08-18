@@ -9,7 +9,7 @@
 	<url>http://nigelzor.ath.cx</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<kotlin.version>0.5.748</kotlin.version>
+		<kotlin.version>0.6.31</kotlin.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -62,16 +62,4 @@
 			</plugin>
 		</plugins>
 	</build>
-	<repositories>
-		<repository>
-			<id>jetbrains-all</id>
-			<url>http://repository.jetbrains.com/all</url>
-		</repository>
-	</repositories>
-	<pluginRepositories>
-		<pluginRepository>
-			<id>jetbrains-all</id>
-			<url>http://repository.jetbrains.com/all</url>
-		</pluginRepository>
-	</pluginRepositories>
 </project>
