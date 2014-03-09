@@ -86,9 +86,10 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 	}
 
 	override fun result(playerJustMoved: Int): Double {
-		val pi = if (playerJustMoved == 1) 0
-			else if (playerJustMoved == 2) 2
-			else throw IllegalStateException()
+		var pi: Int
+		if (playerJustMoved == 1) pi = 0
+		else if (playerJustMoved == 2) pi = 2
+		else throw IllegalStateException()
 
 		for (i in players.indices) {
 			if (hasWon(i)) {
