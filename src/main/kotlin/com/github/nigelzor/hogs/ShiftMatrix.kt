@@ -10,7 +10,7 @@ class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?>) {
 		}
 	}
 
-	public val indicies: Collection<Index> = {
+	val indicies: Collection<Index> = {
 		Preconditions.checkArgument(values.size == rows * cols, "values")
 		val b = ArrayList<Index>()
 		for (x in 0..(rows - 1))
@@ -19,25 +19,25 @@ class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?>) {
 		b
 	}()
 
-	public fun contains(index: Index): Boolean {
+	fun contains(index: Index): Boolean {
 		return index.row >= 0 && index.row < rows && index.col >= 0 && index.col < cols
 	}
 
-	public operator fun get(index: Index): T? {
+	operator fun get(index: Index): T? {
 		return get(index.row, index.col)
 	}
 
-	public operator fun get(row: Int, col: Int): T? {
+	operator fun get(row: Int, col: Int): T? {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		return values[row * cols + col]
 	}
 
-	public operator fun set(index: Index, value: T?) {
+	operator fun set(index: Index, value: T?) {
 		return set(index.row, index.col, value)
 	}
 
-	public operator fun set(row: Int, col: Int, value: T?) {
+	operator fun set(row: Int, col: Int, value: T?) {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		values[row * cols + col] = value
@@ -45,7 +45,7 @@ class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?>) {
 
 	// the order that directions are checked is arbitrary; so long as there's only one space
 	// free, there won't be any alternatives
-	public fun shift(row: Int, col: Int) {
+	fun shift(row: Int, col: Int) {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		var i: Int

@@ -94,6 +94,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		val options = HashSet<Move>()
 		addMapWalkMoves(piToMove, options)
 		addRotateWalkMoves(piToMove, options)
+		addLiftWalkMoves(piToMove, options)
 		return options
 	}
 
@@ -106,19 +107,35 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 
 		if (piToMove == BRAINDEAD) return NoMove.INSTANCE
 
-		val kind = rng.nextInt(2)
+		val kind = rng.nextInt(3)
 		if (kind == 0) {
 			val options = addWalkMoves(piToMove, true) // should never be empty, since we've got the map
 			val walkMove = random(options, rng)
 			return andThenWalkRandomly(rng, walkMove)
 		} else if (kind == 1) {
 			val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
-			var tileIndex: Index
+			var index: Index
 			do {
-				tileIndex = random(tiles.indicies, rng)
-			} while (tiles[tileIndex]!!.objective != null) // "you may not rotate classrooms"
-			val rotateMove = RotateMove(tileIndex, rotation)
+				index = random(tiles.indicies, rng)
+			} while (!okToRotate(index)) // "you may not rotate classrooms"
+			val rotateMove = RotateMove(index, rotation)
 			return andThenWalkRandomly(rng, rotateMove)
+		} else if (kind == 2) {
+			var index: Index
+			do {
+				index = random(tiles.indicies, rng)
+			} while (!okToLift(index))
+			var row = index.row
+			var col = index.col
+			if (rng.nextBoolean()) {
+				row = rng.nextInt(tiles.rows - 1)
+				if (row >= index.row) row += 1
+			} else {
+				col = rng.nextInt(tiles.cols - 1)
+				if (col >= index.col) col += 1
+			}
+			val liftMove = LiftMove(index, Index(row, col))
+			return andThenWalkRandomly(rng, liftMove)
 		}
 		return NoMove.INSTANCE
 	}
@@ -151,6 +168,13 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		}
 	}
 
+	private fun addLiftWalkMoves(player: Int, options: MutableSet<Move>) {
+		val allLifts = addLiftMoves()
+		for (shiftMove in allLifts) {
+			andThenWalk(player, shiftMove, options)
+		}
+	}
+
 	private fun andThenWalk(player: Int, firstMove: Move, options: MutableSet<Move>) {
 		options.add(firstMove) // "you may also choose to stay where you are"
 
@@ -166,7 +190,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		val options = HashSet<RotateMove>()
 		for (index in tiles.indicies) {
 			// TODO-NG: limit rotations for symmetric tiles
-			if (tiles[index]!!.objective == null) { // "you may not rotate classrooms"
+			if (okToRotate(index)) { // "you may not rotate classrooms"
 				options.add(RotateMove(index, Rotation.NINETY_DEGREES))
 				options.add(RotateMove(index, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
 				options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
@@ -174,6 +198,31 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		}
 		return options
 	}
+
+	private fun addLiftMoves(): Set<LiftMove> {
+		val options = HashSet<LiftMove>()
+		for (index in tiles.indicies) {
+			// "you may not lift classrooms"
+			// "you may not lift staircases with characters on them"
+			if (okToLift(index)) {
+				for (row in 0 until tiles.rows) {
+					if (row != index.row) {
+						options.add(LiftMove(index, Index(row, index.col)))
+					}
+				}
+				for (col in 0 until tiles.cols) {
+					if (col != index.col) {
+						options.add(LiftMove(index, Index(index.row, col)))
+					}
+				}
+			}
+		}
+		return options
+	}
+
+	private fun okToLift(index: Index) = tiles[index]!!.players.isEmpty() && okToRotate(index)
+
+	private fun okToRotate(index: Index) = tiles[index]!!.objective == null
 
 	/**
 	 * only applicable for board-home transitions
@@ -184,7 +233,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		return (from and to and 0x0F) != 0
 	}
 
-	fun addHomeToTileWalkMoves(player: Int, homeConnection: HomeConnection, sneak: Boolean = false, options: MutableCollection<Move>) {
+	private fun addHomeToTileWalkMoves(player: Int, homeConnection: HomeConnection, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val connectedIndex = homeConnection.index
 		val connectedTile = tiles[connectedIndex]
 		if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile.connections))) {
@@ -192,7 +241,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		}
 	}
 
-	fun addTileToTileWalkMoves(index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
+	private fun addTileToTileWalkMoves(index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
 		if (sneak) {
 			for (direction in Direction.values()) {
 				val connectedIndex = direction.apply(index)
@@ -265,15 +314,15 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			out.append(" %s=%s".format(i, players[i].collected))
 		}
 		out.append("\n")
-		for (row in 0..(tiles.rows - 1)) {
-			for (col in 0..(tiles.cols - 1)) {
+		for (row in 0 until tiles.rows) {
+			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(0) == true) '0' else ' ')
 				out.append(if (tile?.connectsTo(Direction.NORTH) == true) '║' else ' ')
 				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
 			}
 			out.append("\n")
-			for (col in 0..(tiles.cols - 1)) {
+			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
 				if (tile == null) {
 					out.append(" / ")
@@ -284,7 +333,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 				}
 			}
 			out.append("\n")
-			for (col in 0..(tiles.cols - 1)) {
+			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
 				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) '║' else ' ')
