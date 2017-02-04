@@ -118,7 +118,7 @@ fun <T: Any> playUCT(state: GameState<T>) {
 	sim@ do {
 		while (!state.possible().isEmpty()) {
 			println(state)
-			val itermax = if (state.playerJustMoved == 1) 2000 else 500
+			val itermax = if (state.playerJustMoved == 1) 10000 else 2500
 			val startOfTurn = System.nanoTime()
 			val m = UCT(rootstate = state, itermax = itermax, verbose = false)
 			println("Turn ${turn++} Best Move: ${m} in ${formatNanos(System.nanoTime() - startOfTurn)}")

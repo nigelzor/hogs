@@ -79,7 +79,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	}
 
 	private fun hasWon(player: Int): Boolean {
-		return players[player].collected.size > 1 && homes[player].players.contains(player)
+		return players[player].collected.size == 4 && homes[player].players.contains(player)
 	}
 
 	override fun possible(): Set<Move> {
@@ -91,9 +91,10 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 
 		if (piToMove == BRAINDEAD) return setOf(NoMove.INSTANCE)
 
-//		val options = HashSet<Move>()
-		return addRotateWalkMoves(piToMove)
-//		return options
+		val options = HashSet<Move>()
+		addMapWalkMoves(piToMove, options)
+		addRotateWalkMoves(piToMove, options)
+		return options
 	}
 
 	override fun randomMove(rng: Random): Move? {
@@ -107,10 +108,9 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 
 		val kind = rng.nextInt(2)
 		if (kind == 0) {
-			val options = addWalkMoves(piToMove)
-			if (!options.isEmpty()) {
-				return random(options, rng)
-			}
+			val options = addWalkMoves(piToMove, true) // should never be empty, since we've got the map
+			val walkMove = random(options, rng)
+			return andThenWalkRandomly(rng, walkMove)
 		} else if (kind == 1) {
 			val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
 			var tileIndex: Index
@@ -118,44 +118,46 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 				tileIndex = random(tiles.indicies, rng)
 			} while (tiles[tileIndex]!!.objective != null) // "you may not rotate classrooms"
 			val rotateMove = RotateMove(tileIndex, rotation)
-			val b2 = clone()
-			rotateMove.apply(b2)
-			val allWalks = b2.addWalkMoves(piToMove)
-			if (!allWalks.isEmpty()) {
-				return CompositeMove(listOf(rotateMove, random(allWalks, rng)))
-			}
-			return rotateMove
+			return andThenWalkRandomly(rng, rotateMove)
 		}
 		return NoMove.INSTANCE
 	}
 
-	private fun touchesTile(tile: Index, move: Move): Boolean {
-		if (move is TileToTileWalkMove) {
-			return move.from == tile || move.to == tile
-		} else if (move is HomeToTileWalkMove) {
-			return move.to == tile
-		} else if (move is TileToHomeWalkMove) {
-			return move.from == tile
+	private fun andThenWalkRandomly(rng: Random, firstMove: Move): Move {
+		val b2 = clone()
+		firstMove.apply(b2)
+		val allWalks = b2.addWalkMoves(piToMove)
+		if (!allWalks.isEmpty()) {
+			return CompositeMove(listOf(firstMove, random(allWalks, rng)))
 		}
-		throw UnsupportedOperationException("Unhandled move type " + move)
+		return firstMove
 	}
 
-	private fun addRotateWalkMoves(player: Int): HashSet<Move> {
-		val options = HashSet<Move>()
+	private fun addMapWalkMoves(player: Int, options: MutableSet<Move>) {
+		val allWalks = addWalkMoves(player, true)
+		for (walkMove in allWalks) {
+			andThenWalk(player, walkMove, options)
+		}
+	}
+
+	private fun addRotateWalkMoves(player: Int, options: MutableSet<Move>) {
 		val allRotations = addRotateMoves()
 		for (rotateMove in allRotations) {
-			val b2 = clone()
-			rotateMove.apply(b2)
-			val allWalks = b2.addWalkMoves(player)
-			if (allWalks.isEmpty()) {
-				options.add(rotateMove)
-			} else {
-				for (walkMove in allWalks) {
-					options.add(CompositeMove(listOf(rotateMove, walkMove)))
-				}
+			andThenWalk(player, rotateMove, options)
+		}
+	}
+
+	private fun andThenWalk(player: Int, firstMove: Move, options: MutableSet<Move>) {
+		val b2 = clone()
+		firstMove.apply(b2)
+		val allWalks = b2.addWalkMoves(player)
+		if (allWalks.isEmpty()) {
+			options.add(firstMove)
+		} else {
+			for (walkMove in allWalks) {
+				options.add(CompositeMove(listOf(firstMove, walkMove)))
 			}
 		}
-		return options
 	}
 
 	private fun addRotateMoves(): Set<RotateMove> {
