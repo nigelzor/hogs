@@ -89,12 +89,11 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			}
 		}
 
-		val options = HashSet<Move>()
-		options.add(NoMove.INSTANCE)
-		if (piToMove == BRAINDEAD) return options
-		options.addAll(addWalkMoves(piToMove))
-		options.addAll(addRotateMoves())
-		return options
+		if (piToMove == BRAINDEAD) return setOf(NoMove.INSTANCE)
+
+//		val options = HashSet<Move>()
+		return addRotateWalkMoves(piToMove)
+//		return options
 	}
 
 	override fun randomMove(rng: Random): Move? {
@@ -118,7 +117,14 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			do {
 				tileIndex = random(tiles.indicies, rng)
 			} while (tiles[tileIndex]!!.objective != null) // "you may not rotate classrooms"
-			return RotateMove(tileIndex, rotation)
+			val rotateMove = RotateMove(tileIndex, rotation)
+			val b2 = clone()
+			rotateMove.apply(b2)
+			val allWalks = b2.addWalkMoves(piToMove)
+			if (!allWalks.isEmpty()) {
+				return CompositeMove(listOf(rotateMove, random(allWalks, rng)))
+			}
+			return rotateMove
 		}
 		return NoMove.INSTANCE
 	}
@@ -134,15 +140,22 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		throw UnsupportedOperationException("Unhandled move type " + move)
 	}
 
-	private fun addRotateWalkMoves(player: Int) {
-		val defaultWalkMoves = addWalkMoves(player)
+	private fun addRotateWalkMoves(player: Int): HashSet<Move> {
+		val options = HashSet<Move>()
 		val allRotations = addRotateMoves()
-		for (rotation in allRotations) {
-			val walkMoves = defaultWalkMoves.filterTo(HashSet<Move>()) {
-				touchesTile(rotation.index, it)
+		for (rotateMove in allRotations) {
+			val b2 = clone()
+			rotateMove.apply(b2)
+			val allWalks = b2.addWalkMoves(player)
+			if (allWalks.isEmpty()) {
+				options.add(rotateMove)
+			} else {
+				for (walkMove in allWalks) {
+					options.add(CompositeMove(listOf(rotateMove, walkMove)))
+				}
 			}
-			addTileToHomeWalkMoves(player, rotation.index, options=walkMoves)
 		}
+		return options
 	}
 
 	private fun addRotateMoves(): Set<RotateMove> {
