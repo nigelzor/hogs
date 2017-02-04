@@ -269,7 +269,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			for (col in 0..(tiles.cols - 1)) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(0) == true) '0' else ' ')
-				out.append(if (tile?.connectsTo(Direction.NORTH) == true) 'X' else ' ')
+				out.append(if (tile?.connectsTo(Direction.NORTH) == true) '║' else ' ')
 				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
 			}
 			out.append("\n")
@@ -278,16 +278,16 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 				if (tile == null) {
 					out.append(" / ")
 				} else {
-					out.append(if (tile.connectsTo(Direction.WEST)) 'X' else ' ')
-					out.append(if (tile.objective != null) 'G' else 'X')
-					out.append(if (tile.connectsTo(Direction.EAST)) 'X' else ' ')
+					out.append(if (tile.connectsTo(Direction.WEST)) '═' else ' ')
+					out.append(if (tile.objective != null) 'G' else '╬')
+					out.append(if (tile.connectsTo(Direction.EAST)) '═' else ' ')
 				}
 			}
 			out.append("\n")
 			for (col in 0..(tiles.cols - 1)) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
-				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
+				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) '║' else ' ')
 				out.append(if (tile?.players?.contains(2) == true) '2' else ' ')
 			}
 			out.append("\n")
