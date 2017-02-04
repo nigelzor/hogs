@@ -10,14 +10,15 @@ class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?>) {
 		}
 	}
 
-	val indicies: Collection<Index> = {
+	val indicies: Collection<Index>
+
+	init {
 		Preconditions.checkArgument(values.size == rows * cols, "values")
-		val b = ArrayList<Index>()
-		for (x in 0..(rows - 1))
-			for (y in 0..(cols - 1))
-				b.add(Index(x, y))
-		b
-	}()
+		indicies = ArrayList<Index>()
+		for (x in 0 until rows )
+			for (y in 0 until cols)
+				indicies.add(Index(x, y))
+	}
 
 	fun contains(index: Index): Boolean {
 		return index.row >= 0 && index.row < rows && index.col >= 0 && index.col < cols
