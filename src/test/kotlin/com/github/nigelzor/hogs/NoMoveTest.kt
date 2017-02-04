@@ -5,7 +5,7 @@ import org.junit.Test
 
 public class NoMoveTest {
 
-	[Test]
+	@Test
 	public fun testEquals() {
 		assertEquals(NoMove.INSTANCE, NoMove.INSTANCE)
 	}

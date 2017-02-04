@@ -1,5 +1,5 @@
 package com.github.nigelzor.hogs
 
-public trait Position {
+interface Position {
 	val players: MutableSet<Int>
 }

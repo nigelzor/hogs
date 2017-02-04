@@ -2,14 +2,14 @@ package com.github.nigelzor.hogs
 
 import org.junit.Test
 
-import jet.Int as BTile
+import kotlin.Int as BTile
 import kotlin.test.assertEquals
 import java.util.Random
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 
 public class BTilesTest {
-	class object {
+	companion object {
 		val RANDOM = Random()
 
 		val north = 1 shl 0
@@ -18,7 +18,7 @@ public class BTilesTest {
 		val west = 1 shl 3
 	}
 
-	[Test]
+	@Test
 	public fun testRotations() {
 		assertEquals(north, BTiles.rotate(north, Rotation.ZERO_DEGREES))
 		assertEquals(east, BTiles.rotate(north, Rotation.NINETY_DEGREES))
@@ -26,7 +26,7 @@ public class BTilesTest {
 		assertEquals(west, BTiles.rotate(north, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
 	}
 
-	[Test]
+	@Test
 	public fun testContains() {
 		assertTrue(BTiles.contains(north, Direction.NORTH))
 		assertFalse(BTiles.contains(north, Direction.EAST))
@@ -38,9 +38,9 @@ public class BTilesTest {
 		assertTrue(BTiles.contains(west, Direction.WEST))
 	}
 
-	[Test]
+	@Test
 	public fun testManyRotationsOfEmpty() {
-		100.times {
+		(0..100).forEach {
 			val empty: BTile = RANDOM.nextInt() and 0x0F.inv()
 
 			Rotation.values().forEach {
@@ -49,9 +49,9 @@ public class BTilesTest {
 		}
 	}
 
-	[Test]
+	@Test
 	public fun testManyRotations() {
-		100.times {
+		(0..100).forEach {
 			val tile: BTile = RANDOM.nextInt()
 
 			Rotation.values().forEach { rotation ->

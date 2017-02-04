@@ -1,38 +1,43 @@
 package com.github.nigelzor.hogs
 
 import com.google.common.base.Preconditions
+import java.util.*
 
-public data class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?> = arrayOfNulls(rows * cols)) {
-	public val indicies: Collection<Index>
-	{
-		Preconditions.checkArgument(values.size == rows * cols, "values")
-		val b: ImmutableArrayListBuilder<Index> = listBuilder()
-		b.ensureCapacity(rows * cols)
-		for (x in rows.indices)
-			for (y in cols.indices)
-				b.add(Index(x, y))
-		indicies = b.build()
+class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?>) {
+	companion object {
+		inline fun <reified T: Any> empty(rows: Int, cols: Int): ShiftMatrix<T> {
+			return ShiftMatrix(rows, cols, arrayOfNulls(rows * cols))
+		}
 	}
+
+	public val indicies: Collection<Index> = {
+		Preconditions.checkArgument(values.size == rows * cols, "values")
+		val b = ArrayList<Index>()
+		for (x in 0..(rows - 1))
+			for (y in 0..(cols - 1))
+				b.add(Index(x, y))
+		b
+	}()
 
 	public fun contains(index: Index): Boolean {
 		return index.row >= 0 && index.row < rows && index.col >= 0 && index.col < cols
 	}
 
-	public fun get(index: Index): T? {
+	public operator fun get(index: Index): T? {
 		return get(index.row, index.col)
 	}
 
-	public fun get(row: Int, col: Int): T? {
+	public operator fun get(row: Int, col: Int): T? {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		return values[row * cols + col]
 	}
 
-	public fun set(index: Index, value: T?) {
+	public operator fun set(index: Index, value: T?) {
 		return set(index.row, index.col, value)
 	}
 
-	public fun set(row: Int, col: Int, value: T?) {
+	public operator fun set(row: Int, col: Int, value: T?) {
 		Preconditions.checkElementIndex(row, rows, "row")
 		Preconditions.checkElementIndex(col, cols, "row")
 		values[row * cols + col] = value
@@ -92,10 +97,36 @@ public data class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: 
 		}
 	}
 
-	public fun clone(cloner: (T?) -> T? = { it }): ShiftMatrix<T> {
-		val newValues: Array<T?> = arrayOfNulls(values.size)
-		values.indices.forEach { newValues[it] = cloner(values[it]) }
-		return ShiftMatrix<T>(rows, cols, newValues)
+	fun clone(cloner: (T?) -> T? = { it }): ShiftMatrix<T> {
+		val newValues = values.copyOf()
+		for (i in newValues.indices) {
+			newValues[i] = cloner(newValues[i])
+		}
+		return ShiftMatrix(rows, cols, newValues)
+	}
+
+	override fun equals(other: Any?): Boolean {
+		if (this === other) return true
+		if (other?.javaClass != javaClass) return false
+
+		other as ShiftMatrix<Any> // ShiftMatrix<*> gets confused, and thinks values could be an Array<Nothing>
+
+		if (rows != other.rows) return false
+		if (cols != other.cols) return false
+		if (!Arrays.equals(values, other.values)) return false
+
+		return true
+	}
+
+	override fun hashCode(): Int {
+		var result = rows
+		result = 31 * result + cols
+		result = 31 * result + Arrays.hashCode(values)
+		return result
+	}
+
+	override fun toString(): String {
+		return "ShiftMatrix(rows=$rows, cols=$cols, values=${Arrays.toString(values)})"
 	}
 
 }

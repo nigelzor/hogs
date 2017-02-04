@@ -3,9 +3,7 @@ package com.github.nigelzor.mcts
 import java.util.ArrayList
 import java.util.HashSet
 
-public class Node<Move: Any>(move: Move? = null, parent: Node<Move>? = null, state: GameState<Move>) {
-	val move = move
-	val parentNode = parent
+class Node<Move: Any>(val move: Move? = null, val parent: Node<Move>? = null, state: GameState<Move>) {
 	val childNodes: MutableList<Node<Move>> = ArrayList()
 	var wins = 0.0
 	var visits = 0
@@ -13,7 +11,7 @@ public class Node<Move: Any>(move: Move? = null, parent: Node<Move>? = null, sta
 	val playerJustMoved = state.playerJustMoved
 
 	fun select(): Node<Move>? {
-		return childNodes.sortBy { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }.last
+		return childNodes.sortedBy { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }.last()
 	}
 
 	fun add(move: Move, state: GameState<Move>): Node<Move> {
@@ -28,7 +26,7 @@ public class Node<Move: Any>(move: Move? = null, parent: Node<Move>? = null, sta
 		wins += result
 	}
 
-	fun toString(): String {
+	override fun toString(): String {
 		return "[M:${move} W/V:${wins}/${visits}=${formatThree((100.0 * wins)/visits)}% U:${untriedMoves}]"
 	}
 

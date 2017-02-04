@@ -1,14 +1,14 @@
 package com.github.nigelzor.hogs
 
 import java.util.HashSet
-import java.util.ArrayList
 import com.github.nigelzor.mcts.GameState
 import java.util.Random
 import com.github.nigelzor.mcts.random
 
-import jet.Int as BTile
+import kotlin.Int
+import kotlin.Int as BTile
 
-public data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<Tile>): GameState<Move> {
+data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<Tile>): GameState<Move> {
 	override var playerJustMoved = 2 // UCT player: { 1, 2 }
 
 	val piToMove: Int // hogs player: { 0..3 }
@@ -18,15 +18,10 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 			throw IllegalStateException()
 		}
 
-	private var players: List<Player>
-	var homes: List<Home>
-	{
-		players = Colour.values().map { Player(it) }
-		// map { (i, player) -> ... } would be nice, but no
-		homes = players.indices.mapTo(ArrayList<Home>(), { Home(players[it].colour, hashSetOf(it)) })
-	}
+	private var players = Colour.values().map { Player(it) }
+	var homes = players.mapIndexed { i, player -> Home(player.colour, hashSetOf(i)) }
 
-	class object {
+	companion object {
 		val PLAYERS: Int = 4
 
 		val BRAINDEAD: Int = -1
@@ -38,7 +33,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 					HomeConnection(1, 1, setOf(Direction.NORTH, Direction.WEST)),
 					HomeConnection(1, 0, setOf(Direction.NORTH, Direction.EAST)))
 
-			val tiles = ShiftMatrix<Tile>(2, 2)
+			val tiles = ShiftMatrix.empty<Tile>(2, 2)
 			tiles[0, 0] = TileFactory.tower().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
 			tiles[0, 1] = TileFactory.homework()
 			tiles[1, 1] = TileFactory.potions()
@@ -54,7 +49,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 					HomeConnection(3, 3, setOf(Direction.NORTH, Direction.WEST)),
 					HomeConnection(3, 0, setOf(Direction.NORTH, Direction.EAST)))
 
-			val tiles = ShiftMatrix<Tile>(4, 4)
+			val tiles = ShiftMatrix.empty<Tile>(4, 4)
 			tiles[0, 0] = TileFactory.tee()
 			tiles[1, 0] = TileFactory.straight().rotate(Rotation.NINETY_DEGREES)
 			tiles[2, 0] = TileFactory.elbow().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
@@ -86,7 +81,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 	}
 
 	override fun result(playerJustMoved: Int): Double {
-		var pi: Int
+		val pi: Int
 		if (playerJustMoved == 1) pi = 0
 		else if (playerJustMoved == 2) pi = 2
 		else throw IllegalStateException()
@@ -110,7 +105,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 			}
 		}
 
-		var options = HashSet<Move>()
+		val options = HashSet<Move>()
 		options.add(NoMove.INSTANCE)
 		if (piToMove == BRAINDEAD) return options
 		options.addAll(addWalkMoves(piToMove))
@@ -127,14 +122,14 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 
 		if (piToMove == BRAINDEAD) return NoMove.INSTANCE
 
-		var kind = rng.nextInt(2)
+		val kind = rng.nextInt(2)
 		if (kind == 0) {
-			var options = addWalkMoves(piToMove)
-			if (!options.empty) {
+			val options = addWalkMoves(piToMove)
+			if (!options.isEmpty()) {
 				return random(options, rng)
 			}
 		} else if (kind == 1) {
-			var rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
+			val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
 			return RotateMove(random(tiles.indicies, rng), rotation)
 		}
 		return NoMove.INSTANCE
@@ -163,7 +158,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 	}
 
 	private fun addRotateMoves(): Set<RotateMove> {
-		var options = HashSet<RotateMove>()
+		val options = HashSet<RotateMove>()
 		for (index in tiles.indicies) {
 			// TODO-NG: limit rotations for symmetric tiles
 			options.add(RotateMove(index, Rotation.NINETY_DEGREES))
@@ -271,15 +266,15 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 			out.append(" %s=%s".format(i, players[i].collected))
 		}
 		out.append("\n")
-		for (row in tiles.rows.indices) {
-			for (col in tiles.cols.indices) {
+		for (row in 0..(tiles.rows - 1)) {
+			for (col in 0..(tiles.cols - 1)) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(0) == true) '0' else ' ')
 				out.append(if (tile?.connectsTo(Direction.NORTH) == true) 'X' else ' ')
 				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
 			}
 			out.append("\n")
-			for (col in tiles.cols.indices) {
+			for (col in 0..(tiles.cols - 1)) {
 				val tile = tiles[row, col]
 				if (tile == null) {
 					out.append(" / ")
@@ -290,7 +285,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 				}
 			}
 			out.append("\n")
-			for (col in tiles.cols.indices) {
+			for (col in 0..(tiles.cols - 1)) {
 				val tile = tiles[row, col]
 				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
 				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) 'X' else ' ')
@@ -300,7 +295,7 @@ public data class Board(var homeConnections: List<HomeConnection>, var tiles: Sh
 		}
 	}
 
-	fun toString(): String {
+	override fun toString(): String {
 		val sb = StringBuilder()
 		print(sb)
 		return sb.toString()

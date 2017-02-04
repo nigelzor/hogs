@@ -2,10 +2,11 @@ package com.github.nigelzor.hogs;
 
 import java.util.HashSet
 
-import jet.Int as BTile
+import kotlin.Int
+import kotlin.Int as BTile
 
-public data class Tile(val connections: BTile, val objective: Objective? = null, override val players: MutableSet<Int> = HashSet()): Position {
-	class object {
+data class Tile(val connections: BTile, val objective: Objective? = null, override val players: MutableSet<Int> = HashSet()): Position {
+	companion object {
 		fun fromDirections(vararg ds : Direction): Tile {
 			return Tile(BTiles.fromDirections(ds.toList()))
 		}

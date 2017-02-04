@@ -28,7 +28,7 @@ fun <T: Any> random(values: Collection<T>, rng: Random = random): T {
 }
 
 fun <T> random(values: List<T>, rng: Random = random): T {
-	return values[rng.nextInt(values.size())]
+	return values[rng.nextInt(values.size)]
 }
 
 /**
@@ -36,7 +36,7 @@ fun <T> random(values: List<T>, rng: Random = random): T {
  * Return the best move from the rootstate.
  * Assumes 2 alternating players (player 1 starts), with game results in the range [0.0, 1.0].
  */
-fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = false): Move {
+fun <Move: Any> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = false): Move {
 	val rootnode = Node(state = rootstate)
 
 	for (i in 0..itermax) {
@@ -44,13 +44,13 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 		val state = rootstate.clone()
 
 		// select
-		while (node.untriedMoves.empty && !node.childNodes.empty) { // node is fully expanded and non-terminal
+		while (node.untriedMoves.isEmpty() && !node.childNodes.isEmpty()) { // node is fully expanded and non-terminal
 			node = node.select()!!
 			state.apply(node.move!!)
 		}
 
 		// expand
-		if (!node.untriedMoves.empty) { // node is non-terminal
+		if (!node.untriedMoves.isEmpty()) { // node is non-terminal
 			val move = random(node.untriedMoves)
 			state.apply(move)
 			node = node.add(move, state) // add child and descend tree
@@ -68,7 +68,7 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 		// backpropagate
 		while (true) {
 			node.update(state.result(node.playerJustMoved))
-			val next = node.parentNode
+			val next = node.parent
 			if (next == null) {
 				break
 			} else {
@@ -78,12 +78,12 @@ fun <Move> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = fals
 	}
 
 	// return the most-visited node
-	val sortedMoves = rootnode.childNodes.sortBy { it.visits }
+	val sortedMoves = rootnode.childNodes.sortedBy { it.visits }
 
 	// if (verbose) ...
-	println(sortedMoves.makeString("\n"));
+	println(sortedMoves.joinToString("\n"))
 
-	return sortedMoves.last!!.move!!
+	return sortedMoves.last().move!!
 }
 
 fun formatNanos(nanos: Long): String {
@@ -112,11 +112,11 @@ fun formatThree(num: Double): String {
 	return "%1.3f".format(num)
 }
 
-fun <T> playUCT(state: GameState<T>) {
+fun <T: Any> playUCT(state: GameState<T>) {
 	val startOfGame = System.nanoTime()
 	var turn = 0
-	@sim do {
-		while (!state.possible().empty) {
+	sim@ do {
+		while (!state.possible().isEmpty()) {
 			println(state)
 			val itermax = if (state.playerJustMoved == 1) 2000 else 500
 			val startOfTurn = System.nanoTime()
@@ -125,7 +125,7 @@ fun <T> playUCT(state: GameState<T>) {
 			state.apply(m)
 			if (turn > 30) {
 				println("Out of time!")
-				break @sim
+				break@sim
 			}
 		}
 		if (state.result(state.playerJustMoved) == 1.0)
@@ -134,7 +134,7 @@ fun <T> playUCT(state: GameState<T>) {
 			println("Player ${3 - state.playerJustMoved} wins!")
 		else
 			println("Nobody wins!")
-	} while (false);
+	} while (false)
 	println("Total time: ${formatNanos(System.nanoTime() - startOfGame)}")
 }
 

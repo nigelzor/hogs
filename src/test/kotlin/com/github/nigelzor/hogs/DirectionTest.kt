@@ -5,7 +5,7 @@ import org.junit.Test
 
 public class DirectionTest {
 
-	[Test]
+	@Test
 	public fun testRotateNorth() {
 		assertEquals(Direction.NORTH, Direction.NORTH.rotate(Rotation.ZERO_DEGREES))
 		assertEquals(Direction.EAST, Direction.NORTH.rotate(Rotation.NINETY_DEGREES))
@@ -13,7 +13,7 @@ public class DirectionTest {
 		assertEquals(Direction.WEST, Direction.NORTH.rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
 	}
 
-	[Test]
+	@Test
 	public fun testRotateSouth() {
 		assertEquals(Direction.SOUTH, Direction.SOUTH.rotate(Rotation.ZERO_DEGREES))
 		assertEquals(Direction.WEST, Direction.SOUTH.rotate(Rotation.NINETY_DEGREES))

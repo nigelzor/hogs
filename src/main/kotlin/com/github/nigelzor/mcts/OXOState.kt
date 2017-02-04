@@ -1,8 +1,8 @@
 package com.github.nigelzor.mcts
 
-public class OXOState: GameState<Int> {
+class OXOState: GameState<Int> {
 	override var playerJustMoved = 2
-	var board = array(0,0,0,0,0,0,0,0,0)
+	var board = arrayOf(0,0,0,0,0,0,0,0,0)
 
 	override fun clone(): OXOState {
 		val clone = OXOState()
@@ -12,22 +12,22 @@ public class OXOState: GameState<Int> {
 	}
 
 	override fun apply(move: Int) {
-		assert(board[move] == 0, "position already taken")
+		assert(board[move] == 0, { "position already taken" })
 		playerJustMoved = 3 - playerJustMoved
 		board[move] = playerJustMoved
 	}
 
 	override fun possible(): Set<Int> {
-		for ((x,y,z) in array(Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8), Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), Triple(0, 4, 8), Triple(2, 4, 6))) {
+		for ((x,y,z) in arrayOf(Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8), Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), Triple(0, 4, 8), Triple(2, 4, 6))) {
 			if (board[x] != 0 && board[x] == board[y] && board[y] == board[z]) {
 				return setOf();
 			}
 		}
-		return board.indices.iterator().filter { (idx : Int): Boolean -> board[idx] == 0 }.toSet()
+		return board.indices.filter { board[it] == 0 }.toSet()
 	}
 
 	override fun result(playerJustMoved: Int): Double {
-		for ((x,y,z) in array(Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8), Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), Triple(0, 4, 8), Triple(2, 4, 6))) {
+		for ((x,y,z) in arrayOf(Triple(0, 1, 2), Triple(3, 4, 5), Triple(6, 7, 8), Triple(0, 3, 6), Triple(1, 4, 7), Triple(2, 5, 8), Triple(0, 4, 8), Triple(2, 4, 6))) {
 			if (board[x] == board[y] && board[y] == board[z]) {
 				if (board[x] == playerJustMoved) {
 					return 1.0
@@ -36,11 +36,11 @@ public class OXOState: GameState<Int> {
 				}
 			}
 		}
-		if (possible().empty) return 0.5 // draw
+		if (possible().isEmpty()) return 0.5 // draw
 		throw IllegalStateException()
 	}
 
-	fun toString(): String {
+	override fun toString(): String {
 		var s = StringBuilder()
 		for (i in board.indices) {
 			s.append(".XO"[board[i]])

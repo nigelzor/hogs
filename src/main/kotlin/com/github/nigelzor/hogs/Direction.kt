@@ -1,17 +1,16 @@
 package com.github.nigelzor.hogs
 
-public enum class Direction(val row: Int, val col: Int) {
-	NORTH : Direction(-1, 0)
-	EAST : Direction(0, 1)
-	SOUTH : Direction(1, 0)
-	WEST : Direction(0, -1)
+enum class Direction(val row: Int, val col: Int) {
+	NORTH(-1, 0),
+	EAST(0, 1),
+	SOUTH(1, 0),
+	WEST(0, -1);
 
-	public fun rotate(rotation: Rotation): Direction {
-		return Direction.values()[(ordinal() + rotation.ordinal()) % 4];
+	fun rotate(rotation: Rotation): Direction {
+		return Direction.values()[(ordinal + rotation.ordinal) % 4]
 	}
 
-	public fun apply(input: Index): Index {
+	fun apply(input: Index): Index {
 		return Index(input.row + row, input.col + col)
 	}
-
 }
