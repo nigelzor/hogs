@@ -101,7 +101,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	override fun possible(): Set<Move> {
 		for (i in players.indices) {
 			if (hasWon(i)) {
-				return hashSetOf(); // game is over
+				return hashSetOf() // game is over
 			}
 		}
 
@@ -116,7 +116,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	override fun randomMove(rng: Random): Move? {
 		for (i in players.indices) {
 			if (hasWon(i)) {
-				return null; // game is over
+				return null // game is over
 			}
 		}
 
@@ -130,7 +130,11 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			}
 		} else if (kind == 1) {
 			val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
-			return RotateMove(random(tiles.indicies, rng), rotation)
+			var tileIndex: Index
+			do {
+				tileIndex = random(tiles.indicies, rng)
+			} while (tiles[tileIndex]!!.objective != null) // "you may not rotate classrooms"
+			return RotateMove(tileIndex, rotation)
 		}
 		return NoMove.INSTANCE
 	}
@@ -161,9 +165,11 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		val options = HashSet<RotateMove>()
 		for (index in tiles.indicies) {
 			// TODO-NG: limit rotations for symmetric tiles
-			options.add(RotateMove(index, Rotation.NINETY_DEGREES))
-			options.add(RotateMove(index, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
-			options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
+			if (tiles[index]!!.objective == null) { // "you may not rotate classrooms"
+				options.add(RotateMove(index, Rotation.NINETY_DEGREES))
+				options.add(RotateMove(index, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
+				options.add(RotateMove(index, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
+			}
 		}
 		return options
 	}
@@ -224,7 +230,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	}
 
 	private fun addWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
-		var options = HashSet<Move>()
+		val options = HashSet<Move>()
 		if (player in homes[player].players) {
 			addHomeToTileWalkMoves(player, homeConnections[player], sneak, options)
 		} else {
@@ -260,7 +266,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		return clone
 	}
 
-	public fun print(out: Appendable) {
+	fun print(out: Appendable) {
 		out.append("Players:")
 		for (i in players.indices) {
 			out.append(" %s=%s".format(i, players[i].collected))
@@ -279,9 +285,9 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 				if (tile == null) {
 					out.append(" / ")
 				} else {
-					out.append(if (tile.connectsTo(Direction.WEST) == true) 'X' else ' ')
+					out.append(if (tile.connectsTo(Direction.WEST)) 'X' else ' ')
 					out.append(if (tile.objective != null) 'G' else 'X')
-					out.append(if (tile.connectsTo(Direction.EAST) == true) 'X' else ' ')
+					out.append(if (tile.connectsTo(Direction.EAST)) 'X' else ' ')
 				}
 			}
 			out.append("\n")

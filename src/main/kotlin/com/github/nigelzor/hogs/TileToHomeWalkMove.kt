@@ -1,7 +1,7 @@
 package com.github.nigelzor.hogs
 
-public data class TileToHomeWalkMove(val from: Index, val to: Int): Move {
-	public override fun apply(board: Board) {
+data class TileToHomeWalkMove(val from: Index, val to: Int): Move {
+	override fun apply(board: Board) {
 		val player = board.piToMove
 
 		assert(board.tiles[from]!!.players.contains(player), { "player not at source position" })

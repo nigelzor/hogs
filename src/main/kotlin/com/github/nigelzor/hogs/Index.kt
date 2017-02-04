@@ -1,5 +1,7 @@
 package com.github.nigelzor.hogs
 
-public data class Index(val row: Int, val col: Int) {
-
+data class Index(val row: Int, val col: Int) {
+    override fun toString(): String {
+        return "[$row, $col]"
+    }
 }
