@@ -8,19 +8,19 @@ import kotlin.Int as BTile
 data class Tile(val connections: BTile, val objective: Objective? = null, override val players: MutableSet<Int> = HashSet()): Position {
 	companion object {
 		fun fromDirections(vararg ds : Direction): Tile {
-			return Tile(BTiles.fromDirections(ds.toList()))
+			return Tile(BTiles.fromDirections(*ds))
 		}
 	}
 
-	public fun rotate(rotation: Rotation): Tile {
+	fun rotate(rotation: Rotation): Tile {
 		return Tile(BTiles.rotate(connections, rotation), objective, players)
 	}
 
-	public fun connectsTo(direction: Direction): Boolean {
+	fun connectsTo(direction: Direction): Boolean {
 		return BTiles.contains(connections, direction)
 	}
 
-	public fun clone(): Tile {
+	fun clone(): Tile {
 		return copy(players=HashSet(players))
 	}
 

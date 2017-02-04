@@ -26,28 +26,12 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 
 		val BRAINDEAD: Int = -1
 
-		fun tinyBoard(): Board {
-			val homeConnections = listOf(
-					HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
-					HomeConnection(0, 1, setOf(Direction.SOUTH, Direction.WEST)),
-					HomeConnection(1, 1, setOf(Direction.NORTH, Direction.WEST)),
-					HomeConnection(1, 0, setOf(Direction.NORTH, Direction.EAST)))
-
-			val tiles = ShiftMatrix.empty<Tile>(2, 2)
-			tiles[0, 0] = TileFactory.tower().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
-			tiles[0, 1] = TileFactory.homework()
-			tiles[1, 1] = TileFactory.potions()
-			tiles[1, 0] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
-
-			return Board(homeConnections, tiles)
-		}
-
 		fun defaultBoard(): Board {
 			val homeConnections = listOf(
-					HomeConnection(0, 0, setOf(Direction.SOUTH, Direction.EAST)),
-					HomeConnection(0, 3, setOf(Direction.SOUTH, Direction.WEST)),
-					HomeConnection(3, 3, setOf(Direction.NORTH, Direction.WEST)),
-					HomeConnection(3, 0, setOf(Direction.NORTH, Direction.EAST)))
+					HomeConnection(0, 0, BTiles.fromDirections(Direction.SOUTH, Direction.EAST)),
+					HomeConnection(0, 3, BTiles.fromDirections(Direction.SOUTH, Direction.WEST)),
+					HomeConnection(3, 3, BTiles.fromDirections(Direction.NORTH, Direction.WEST)),
+					HomeConnection(3, 0, BTiles.fromDirections(Direction.NORTH, Direction.EAST)))
 
 			val tiles = ShiftMatrix.empty<Tile>(4, 4)
 			tiles[0, 0] = TileFactory.tee()
@@ -179,16 +163,8 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	 * tile-to-tile walks need to consider the relative position of the tiles (my NORTH doesn't match your SOUTH unless
 	 * you're directly below me).
 	 */
-	private fun canWalk(from: Set<Direction>, to: Set<Direction>): Boolean {
-		return from.any { to.contains(it.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)) }
-	}
-
-	private fun canWalk(from: Set<Direction>, to: BTile): Boolean {
-		return canWalk(from, BTiles.toDirections(to))
-	}
-
-	private fun canWalk(from: BTile, to: Set<Direction>): Boolean {
-		return canWalk(BTiles.toDirections(from), to)
+	private fun canWalk(from: BTile, to: BTile): Boolean {
+		return (from and to and 0x0F) != 0
 	}
 
 	fun addHomeToTileWalkMoves(player: Int, homeConnection: HomeConnection, sneak: Boolean = false, options: MutableCollection<Move>) {

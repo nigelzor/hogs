@@ -8,7 +8,7 @@ import java.util.Random
 import kotlin.test.assertTrue
 import kotlin.test.assertFalse
 
-public class BTilesTest {
+class BTilesTest {
 	companion object {
 		val RANDOM = Random()
 
@@ -18,16 +18,14 @@ public class BTilesTest {
 		val west = 1 shl 3
 	}
 
-	@Test
-	public fun testRotations() {
+	@Test fun testRotations() {
 		assertEquals(north, BTiles.rotate(north, Rotation.ZERO_DEGREES))
 		assertEquals(east, BTiles.rotate(north, Rotation.NINETY_DEGREES))
 		assertEquals(south, BTiles.rotate(north, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
 		assertEquals(west, BTiles.rotate(north, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
 	}
 
-	@Test
-	public fun testContains() {
+	@Test fun testContains() {
 		assertTrue(BTiles.contains(north, Direction.NORTH))
 		assertFalse(BTiles.contains(north, Direction.EAST))
 		assertFalse(BTiles.contains(north, Direction.SOUTH))
@@ -38,25 +36,19 @@ public class BTilesTest {
 		assertTrue(BTiles.contains(west, Direction.WEST))
 	}
 
-	@Test
-	public fun testManyRotationsOfEmpty() {
+	@Test fun testBits() {
+		assertEquals(north, Direction.NORTH.bits)
+		assertEquals(east, Direction.EAST.bits)
+		assertEquals(south, Direction.SOUTH.bits)
+		assertEquals(west, Direction.WEST.bits)
+	}
+
+	@Test fun testManyRotationsOfEmpty() {
 		(0..100).forEach {
 			val empty: BTile = RANDOM.nextInt() and 0x0F.inv()
 
 			Rotation.values().forEach {
 				assertEquals(empty, BTiles.rotate(empty, it))
-			}
-		}
-	}
-
-	@Test
-	public fun testManyRotations() {
-		(0..100).forEach {
-			val tile: BTile = RANDOM.nextInt()
-
-			Rotation.values().forEach { rotation ->
-				val expected = BTiles.toDirections(tile).map { it.rotate(rotation) }.toSet()
-				assertEquals(expected, BTiles.toDirections(BTiles.rotate(tile, rotation)), "Rotating " + rotation)
 			}
 		}
 	}

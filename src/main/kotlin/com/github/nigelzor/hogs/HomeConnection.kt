@@ -1,6 +1,9 @@
 package com.github.nigelzor.hogs
 
-public data class HomeConnection(val row: Int, val col: Int, val connections: Set<Direction>) {
+import kotlin.Int
+import kotlin.Int as BTile
+
+data class HomeConnection(val row: Int, val col: Int, val connections: BTile) {
 	val index: Index
 		get() = Index(row, col)
 }

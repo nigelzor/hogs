@@ -15,26 +15,16 @@ import kotlin.Int as BTile
  */
 object BTiles {
 	fun eachDirection(tile: BTile, closure: (Direction) -> Unit) {
-		if (tile and 0x01 != 0) closure.invoke(Direction.NORTH)
-		if (tile and 0x02 != 0) closure.invoke(Direction.EAST)
-		if (tile and 0x04 != 0) closure.invoke(Direction.SOUTH)
-		if (tile and 0x08 != 0) closure.invoke(Direction.WEST)
+		if (tile and Direction.NORTH.bits != 0) closure.invoke(Direction.NORTH)
+		if (tile and Direction.EAST.bits != 0) closure.invoke(Direction.EAST)
+		if (tile and Direction.SOUTH.bits != 0) closure.invoke(Direction.SOUTH)
+		if (tile and Direction.WEST.bits != 0) closure.invoke(Direction.WEST)
 	}
 
-	// very slow!
-	fun toDirections(tile: BTile): Set<Direction> {
-		val result: MutableSet<Direction> = hashSetOf()
-		if (tile and 0x01 != 0) result.add(Direction.NORTH)
-		if (tile and 0x02 != 0) result.add(Direction.EAST)
-		if (tile and 0x04 != 0) result.add(Direction.SOUTH)
-		if (tile and 0x08 != 0) result.add(Direction.WEST)
-		return result
-	}
-
-	fun fromDirections(directions: Iterable<Direction>): BTile {
+	fun fromDirections(vararg directions: Direction): BTile {
 		var result = 0
 		for (direction in directions) {
-			result = result or (1 shl direction.ordinal)
+			result = result or direction.bits
 		}
 		return result
 	}
@@ -43,14 +33,13 @@ object BTiles {
 		if (rotation == Rotation.ZERO_DEGREES) return tile
 
 		var connections = tile and 0x0F
-		connections = connections or (connections shl 4)
 		connections = connections shl rotation.ordinal
-		connections = connections shr 4
+		connections = connections or (connections shr 4)
 
 		return (tile and 0x0F.inv()) or (connections and 0x0F)
 	}
 
 	fun contains(tile: BTile, direction: Direction): Boolean {
-		return tile and (1 shl direction.ordinal) != 0
+		return tile and direction.bits != 0
 	}
 }

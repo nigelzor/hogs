@@ -6,6 +6,8 @@ enum class Direction(val row: Int, val col: Int) {
 	SOUTH(1, 0),
 	WEST(0, -1);
 
+	val bits = 1 shl ordinal
+
 	fun rotate(rotation: Rotation): Direction {
 		return Direction.values()[(ordinal + rotation.ordinal) % 4]
 	}
