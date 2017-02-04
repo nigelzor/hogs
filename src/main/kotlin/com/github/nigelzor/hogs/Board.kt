@@ -124,11 +124,15 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	}
 
 	private fun andThenWalkRandomly(rng: Random, firstMove: Move): Move {
-		val b2 = clone()
-		firstMove.apply(b2)
-		val allWalks = b2.addWalkMoves(piToMove)
-		if (!allWalks.isEmpty()) {
-			return CompositeMove(listOf(firstMove, random(allWalks, rng)))
+		// 5% chance to stop after the first step
+		// this is not equally-weighted, but faster to skip determining how many other options there are
+		if (rng.nextInt(20) != 0) {
+			val b2 = clone()
+			firstMove.apply(b2)
+			val allWalks = b2.addWalkMoves(piToMove)
+			if (!allWalks.isEmpty()) {
+				return CompositeMove(listOf(firstMove, random(allWalks, rng)))
+			}
 		}
 		return firstMove
 	}
@@ -148,15 +152,13 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	}
 
 	private fun andThenWalk(player: Int, firstMove: Move, options: MutableSet<Move>) {
+		options.add(firstMove) // "you may also choose to stay where you are"
+
 		val b2 = clone()
 		firstMove.apply(b2)
 		val allWalks = b2.addWalkMoves(player)
-		if (allWalks.isEmpty()) {
-			options.add(firstMove)
-		} else {
-			for (walkMove in allWalks) {
-				options.add(CompositeMove(listOf(firstMove, walkMove)))
-			}
+		for (walkMove in allWalks) {
+			options.add(CompositeMove(listOf(firstMove, walkMove)))
 		}
 	}
 

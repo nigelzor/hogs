@@ -80,8 +80,7 @@ fun <Move: Any> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean =
 	// return the most-visited node
 	val sortedMoves = rootnode.childNodes.sortedBy { it.visits }
 
-	// if (verbose) ...
-	println(sortedMoves.joinToString("\n"))
+	if (verbose) sortedMoves.forEach(::println)
 
 	return sortedMoves.last().move!!
 }
