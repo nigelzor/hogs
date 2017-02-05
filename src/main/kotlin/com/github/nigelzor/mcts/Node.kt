@@ -7,7 +7,7 @@ class Node<Move: Any>(val move: Move? = null, val parent: Node<Move>? = null, st
 	val childNodes: MutableList<Node<Move>> = ArrayList()
 	var wins = 0.0
 	var visits = 0
-	val untriedMoves: MutableSet<Move> = HashSet(state.possible())
+	val untriedMoves = HashSet(state.possible())
 	val playerJustMoved = state.playerJustMoved
 
 	fun select(): Node<Move>? {
@@ -27,7 +27,7 @@ class Node<Move: Any>(val move: Move? = null, val parent: Node<Move>? = null, st
 	}
 
 	override fun toString(): String {
-		return "[M:${move} W/V:${wins}/${visits}=${formatThree((100.0 * wins)/visits)}% U:${untriedMoves}]"
+		return "[M:${move} W/V:${wins}/${visits}=${formatThree((100.0 * wins)/visits)}% U:${untriedMoves.size}]"
 	}
 
 }

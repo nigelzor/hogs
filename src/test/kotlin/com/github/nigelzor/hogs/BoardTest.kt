@@ -7,27 +7,33 @@ import org.junit.Test
 import java.util.*
 
 class BoardTest {
-	@Test fun testFirstTurnMoves() {
+	@Test fun testFirstTurnWalkMoves() {
 		val board = Board.defaultBoard()
-		val potentialMoves = board.possible()
-		var expected = 0
-		// 3 rotations of every non-classroom tile + Walk(Home->Board)
-		// corners are T, so no rotation can block the walk
-		expected += 3 * 12
-		// but you can also rotate and not walk
-		expected += 3 * 12
-		// walk once, stop
-		expected += 1
-		// walk once, then back the way you came
-		expected += 1
-		// walk once, then continue to the next tile
-		expected += 1
-		// 12 liftable tiles, each with 6 tiles that could shift into place (and then don't walk)
-		expected += 12 * 6
-		// 12 liftable tiles, each with 6 tiles that could shift into place (and then walk? this number is wrong-ish)
-		expected += 12 * 6
-//		potentialMoves.forEach(::println)
-		assertThat(potentialMoves, hasSize(expected))
+		var potentialMoves = board.possibleWalkMoves(board.piToMove)
+		assertThat(potentialMoves, hasSize(1))
+
+		// but if the corner tile is a L facing the wrong way
+		val tmp = board.tiles[0, 0]
+		board.tiles[0, 0] = board.tiles[0, 1]
+		board.tiles[0, 1] = tmp
+		potentialMoves = board.possibleWalkMoves(board.piToMove)
+		assertThat(potentialMoves, hasSize(0))
+
+		// unless you've got the map
+		potentialMoves = board.possibleWalkMoves(board.piToMove, true)
+		assertThat(potentialMoves, hasSize(1))
+	}
+
+	@Test fun testFirstTurnRotateMoves() {
+		val board = Board.defaultBoard()
+		val potentialMoves = board.possibleRotateMoves()
+		assertThat(potentialMoves, hasSize(12 * 3))
+	}
+
+	@Test fun testFirstTurnLiftMoves() {
+		val board = Board.defaultBoard()
+		val potentialMoves = board.possibleLiftMoves()
+		assertThat(potentialMoves, hasSize(12 * 6))
 	}
 
 	@Test fun testApplyFirstTurnMoves() {

@@ -11,6 +11,10 @@ data class Home(val row: Int, val col: Int, val tile: BTile) {
 		return tile.contains(player)
 	}
 
+	fun rotate(rotation: Rotation): Home {
+		return copy(tile = tile.rotate(rotation))
+	}
+
 	fun with(player: Player): Home {
 		return copy(tile = tile.with(player))
 	}

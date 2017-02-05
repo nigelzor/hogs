@@ -9,5 +9,4 @@ data class Player(val colour: Colour, val collected: Int = 0) {
 	fun collectedEverything(): Boolean {
 		return collected == Objective.ALL_BITS
 	}
-
 }

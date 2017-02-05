@@ -110,7 +110,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 		val kind = rng.nextInt(3)
 		if (kind == 0) {
-			val options = addWalkMoves(piToMove, true) // should never be empty, since we've got the map
+			val options = possibleWalkMoves(piToMove, true) // should never be empty, since we've got the map
 			val walkMove = random(options, rng)
 			return andThenWalkRandomly(rng, walkMove)
 		} else if (kind == 1) {
@@ -147,7 +147,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		if (rng.nextInt(20) != 0) {
 			val b2 = clone()
 			firstMove.apply(b2)
-			val allWalks = b2.addWalkMoves(piToMove)
+			val allWalks = b2.possibleWalkMoves(piToMove)
 			if (!allWalks.isEmpty()) {
 				return CompositeMove(listOf(firstMove, random(allWalks, rng)))
 			}
@@ -156,21 +156,21 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 	}
 
 	private fun addMapWalkMoves(player: Int, options: MutableSet<Move>) {
-		val allWalks = addWalkMoves(player, true)
+		val allWalks = possibleWalkMoves(player, true)
 		for (walkMove in allWalks) {
 			andThenWalk(player, walkMove, options)
 		}
 	}
 
 	private fun addRotateWalkMoves(player: Int, options: MutableSet<Move>) {
-		val allRotations = addRotateMoves()
+		val allRotations = possibleRotateMoves()
 		for (rotateMove in allRotations) {
 			andThenWalk(player, rotateMove, options)
 		}
 	}
 
 	private fun addLiftWalkMoves(player: Int, options: MutableSet<Move>) {
-		val allLifts = addLiftMoves()
+		val allLifts = possibleLiftMoves()
 		for (shiftMove in allLifts) {
 			andThenWalk(player, shiftMove, options)
 		}
@@ -181,13 +181,13 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 		val b2 = clone()
 		firstMove.apply(b2)
-		val allWalks = b2.addWalkMoves(player)
+		val allWalks = b2.possibleWalkMoves(player)
 		for (walkMove in allWalks) {
 			options.add(CompositeMove(listOf(firstMove, walkMove)))
 		}
 	}
 
-	private fun addRotateMoves(): Set<RotateMove> {
+	fun possibleRotateMoves(): Set<RotateMove> {
 		val options = HashSet<RotateMove>()
 		for (index in tiles.indicies) {
 			// TODO-NG: limit rotations for symmetric tiles
@@ -200,7 +200,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		return options
 	}
 
-	private fun addLiftMoves(): Set<LiftMove> {
+	fun possibleLiftMoves(): Set<LiftMove> {
 		val options = HashSet<LiftMove>()
 		for (index in tiles.indicies) {
 			// "you may not lift classrooms"
@@ -231,7 +231,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 	 * you're directly below me).
 	 */
 	private fun canWalk(from: BTile, to: BTile): Boolean {
-		return (from and to and 0x0F) != 0
+		return (from.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES) and to and 0x0F) != 0
 	}
 
 	private fun addHomeToTileWalkMoves(player: Int, homeConnection: Home, sneak: Boolean = false, options: MutableCollection<Move>) {
@@ -272,7 +272,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		}
 	}
 
-	private fun addWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
+	fun possibleWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
 		val options = HashSet<Move>()
 		if (homes[player].contains(players[player])) {
 			addHomeToTileWalkMoves(player, homes[player], sneak, options)
@@ -301,8 +301,12 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 	fun print(out: Appendable) {
 		out.append("Players:")
-		for (i in players.indices) {
-			out.append(" %s=%s".format(i, players[i].collected))
+		players.forEachIndexed { i, player ->
+			out.append(" %s=".format(i))
+			if (player.collected.contains(Objective.ONE)) out.append('A')
+			if (player.collected.contains(Objective.TWO)) out.append('B')
+			if (player.collected.contains(Objective.THREE)) out.append('C')
+			if (player.collected.contains(Objective.FOUR)) out.append('D')
 		}
 		out.append("\n")
 		for (row in 0 until tiles.rows) {
@@ -319,7 +323,13 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 					out.append(" / ")
 				} else {
 					out.append(if (tile.contains(Direction.WEST)) '═' else ' ')
-					out.append(if (!tile.containsNoObjectives()) 'G' else '╬')
+					// I wanted to use ①②③④, but they're double-wide
+					out.append(
+							if (tile.contains(Objective.ONE)) 'A'
+							else if (tile.contains(Objective.TWO)) 'B'
+							else if (tile.contains(Objective.THREE)) 'C'
+							else if (tile.contains(Objective.FOUR)) 'D'
+							else '╬')
 					out.append(if (tile.contains(Direction.EAST)) '═' else ' ')
 				}
 			}
