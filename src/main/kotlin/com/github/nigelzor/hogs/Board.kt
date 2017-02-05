@@ -8,14 +8,15 @@ import com.github.nigelzor.mcts.random
 import kotlin.Int as BTile
 
 data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>, var step: Step, var rolled: Rolled): GameState<Move, Colour> {
-	override val playerJustMoved: Colour // UCT player: { 1, 2 }
-		get() = prev(step).player
+	override val playerJustMoved: Colour // harness checks for winning _after_ a move, so we need to track who made it
+		get() = step.playerJustMoved
 
 	companion object {
 		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT))
 
 		fun defaultBoard(): Board {
 			val players = Colour.values().map { Player(it) }.toMutableList()
+			val first = players.first().colour
 
 			val homes = listOf(
 					Home(0, 0, BTiles.fromDirections(Direction.SOUTH, Direction.EAST)),
@@ -43,7 +44,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			tiles[2, 2] = TileFactory.potions()
 			tiles[2, 1] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
 
-			return Board(players, homes, tiles, RollStep(players.first().colour), Rolled.MAP)
+			return Board(players, homes, tiles, RollStep(first, first), Rolled.MAP)
 		}
 	}
 
@@ -52,42 +53,38 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 	}
 
 	interface Step {
+		val name: String
+		val playerJustMoved: Colour
 		val player: Colour
 	}
 
-	data class RollStep(override val player: Colour): Step
+	data class RollStep(override val playerJustMoved: Colour, override val player: Colour): Step {
+		override val name = "Roll"
+	}
 
-	data class ActStep(override val player: Colour): Step
+	data class ActStep(override val playerJustMoved: Colour, override val player: Colour): Step {
+		override val name = "Act"
+	}
 
-	data class MoveStep(override val player: Colour): Step
+	data class MoveStep(override val playerJustMoved: Colour, override val player: Colour): Step {
+		override val name = "Move"
+	}
 
 	fun next(step: Step): Step {
 		return when (step) {
-			is RollStep -> ActStep(step.player)
-			is ActStep -> MoveStep(step.player)
-			is MoveStep -> RollStep(nextPlayer(step.player))
-			else -> throw IllegalStateException()
-		}
-	}
-
-	fun prev(step: Step): Step {
-		return when (step) {
-			is RollStep -> MoveStep(prevPlayer(step.player))
-			is ActStep -> RollStep(step.player)
-			is MoveStep -> ActStep(step.player)
+			is RollStep -> ActStep(step.player, step.player)
+			is ActStep -> MoveStep(step.player, step.player)
+			is MoveStep -> RollStep(step.player, nextPlayer(step.player))
 			else -> throw IllegalStateException()
 		}
 	}
 
 	private fun nextPlayer(player: Colour): Colour {
-		return Colour.values()[when (player.ordinal) {
-			0 -> 2
-			2 -> 0
-			else -> throw IllegalStateException()
-		}]
+		// 4-player
+//		return Colour.values()[(player.ordinal + 1) % 4]
+		// 2-player
+		return Colour.values()[(player.ordinal + 2) % 4]
 	}
-
-	private fun prevPlayer(player: Colour) = nextPlayer(player) // in a two player game... yeah
 
 	private fun findPlayerTile(player: Colour): Index? {
 		for (index in tiles.indicies) {
@@ -310,8 +307,8 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 	}
 
 	fun print(out: Appendable) {
-		out.append("Step: $step\n")
-		out.append("Players:")
+		out.append("Step: ${step.name}, Player: ${step.player}\n")
+		out.append("Objectives:")
 		players.forEach { player ->
 			out.append(" ${player.colour}=")
 			if (player.collected.contains(Objective.ONE)) out.append('1')
