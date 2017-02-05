@@ -32,7 +32,7 @@ class BoardTest {
 
 	@Test fun testFirstTurnLiftMoves() {
 		val board = Board.defaultBoard()
-		val potentialMoves = board.possibleLiftMoves()
+		val potentialMoves = board.possibleLiftMoves(1)
 		assertThat(potentialMoves, hasSize(12 * 6))
 	}
 

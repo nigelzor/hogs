@@ -5,6 +5,7 @@ import com.github.nigelzor.mcts.GameState
 import java.util.Random
 import com.github.nigelzor.mcts.random
 
+import kotlin.Int
 import kotlin.Int as BTile
 
 data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>, var step: Step, var rolled: Rolled): GameState<Move, Colour> {
@@ -12,7 +13,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		get() = step.playerJustMoved
 
 	companion object {
-		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT))
+		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT_1), RollMove(Rolled.LIFT_2))
 
 		fun defaultBoard(): Board {
 			val players = Colour.values().map { Player(it) }.toMutableList()
@@ -126,8 +127,11 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			if (rolled == Rolled.ROTATE) {
 				return possibleRotateMoves()
 			}
-			if (rolled == Rolled.LIFT) {
-				return possibleLiftMoves()
+			if (rolled == Rolled.LIFT_1) {
+				return possibleLiftMoves(1)
+			}
+			if (rolled == Rolled.LIFT_2) {
+				return possibleLiftMoves(2)
 			}
 		}
 
@@ -163,7 +167,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 				} while (!okToRotate(index)) // "you may not rotate classrooms"
 				return RotateMove(index, rotation)
 			}
-			if (rolled == Rolled.LIFT) {
+			if (rolled == Rolled.LIFT_1 || rolled == Rolled.LIFT_2) {
 				var index: Index
 				do {
 					index = random(tiles.indicies, rng)
@@ -177,7 +181,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 					col = rng.nextInt(tiles.cols - 1)
 					if (col >= index.col) col += 1
 				}
-				return LiftMove(index, Index(row, col))
+				return LiftMove(index, listOf(Index(row, col)))
 			}
 		}
 
@@ -209,25 +213,40 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		return options
 	}
 
-	fun possibleLiftMoves(): Set<LiftMove> {
+	fun possibleLiftMoves(n: Int): Set<LiftMove> {
 		val options = HashSet<LiftMove>()
 		for (index in tiles.indicies) {
 			// "you may not lift classrooms"
 			// "you may not lift staircases with characters on them"
 			if (okToLift(index)) {
-				for (row in 0 until tiles.rows) {
-					if (row != index.row) {
-						options.add(LiftMove(index, Index(row, index.col)))
-					}
-				}
-				for (col in 0 until tiles.cols) {
-					if (col != index.col) {
-						options.add(LiftMove(index, Index(index.row, col)))
+				val first = liftsForIndex(index)
+				for (f in first) {
+					options.add(LiftMove(index, listOf(f)))
+					if (n > 1) {
+						val second = liftsForIndex(f)
+						for (s in second) {
+							options.add(LiftMove(index, listOf(f, s)))
+						}
 					}
 				}
 			}
 		}
 		return options
+	}
+
+	private fun liftsForIndex(index: Index): MutableSet<Index> {
+		val lifts: MutableSet<Index> = mutableSetOf()
+		for (row in 0 until tiles.rows) {
+			if (row != index.row) {
+				lifts.add(Index(row, index.col))
+			}
+		}
+		for (col in 0 until tiles.cols) {
+			if (col != index.col) {
+				lifts.add(Index(index.row, col))
+			}
+		}
+		return lifts
 	}
 
 	private fun okToLift(index: Index) = tiles[index]!!.containsNoPlayers() && okToRotate(index)
