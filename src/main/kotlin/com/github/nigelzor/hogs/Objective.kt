@@ -4,5 +4,7 @@ enum class Objective {
 	ONE,
 	TWO,
 	THREE,
-	FOUR
+	FOUR;
+
+	val bits = 1 shl (8 + ordinal)
 }

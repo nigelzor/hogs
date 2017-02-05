@@ -4,5 +4,7 @@ enum class Colour {
 	BLUE,
 	YELLOW,
 	RED,
-	GREEN
+	GREEN;
+
+	val bits = 1 shl (16 + ordinal)
 }

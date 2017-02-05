@@ -8,7 +8,7 @@ import com.github.nigelzor.mcts.random
 import kotlin.Int
 import kotlin.Int as BTile
 
-data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<Tile>): GameState<Move> {
+data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<BTile>): GameState<Move> {
 	override var playerJustMoved = 2 // UCT player: { 1, 2 }
 
 	val piToMove: Int // hogs player: { 0..3 }
@@ -18,7 +18,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			throw IllegalStateException()
 		}
 
-	private var players = Colour.values().map { Player(it) }
+	var players = Colour.values().map { Player(it) }
 	var homes = players.mapIndexed { i, player -> Home(player.colour, hashSetOf(i)) }
 
 	companion object {
@@ -33,7 +33,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 					HomeConnection(3, 3, BTiles.fromDirections(Direction.NORTH, Direction.WEST)),
 					HomeConnection(3, 0, BTiles.fromDirections(Direction.NORTH, Direction.EAST)))
 
-			val tiles = ShiftMatrix.empty<Tile>(4, 4)
+			val tiles = ShiftMatrix.empty<BTile>(4, 4)
 			tiles[0, 0] = TileFactory.tee()
 			tiles[1, 0] = TileFactory.straight().rotate(Rotation.NINETY_DEGREES)
 			tiles[2, 0] = TileFactory.elbow().rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES)
@@ -57,7 +57,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 
 	private fun findPlayerTile(player: Int): Index? {
 		for (index in tiles.indicies) {
-			if (tiles[index]?.players?.contains(player) == true) {
+			if (tiles[index]?.contains(players[player]) == true) {
 				return index
 			}
 		}
@@ -220,9 +220,9 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		return options
 	}
 
-	private fun okToLift(index: Index) = tiles[index]!!.players.isEmpty() && okToRotate(index)
+	private fun okToLift(index: Index) = tiles[index]!!.containsNoPlayers() && okToRotate(index)
 
-	private fun okToRotate(index: Index) = tiles[index]!!.objective == null
+	private fun okToRotate(index: Index) = tiles[index]!!.containsNoObjectives()
 
 	/**
 	 * only applicable for board-home transitions
@@ -236,7 +236,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	private fun addHomeToTileWalkMoves(player: Int, homeConnection: HomeConnection, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val connectedIndex = homeConnection.index
 		val connectedTile = tiles[connectedIndex]
-		if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile.connections))) {
+		if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile))) {
 			options.add(HomeToTileWalkMove(player, connectedIndex))
 		}
 	}
@@ -251,11 +251,11 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			}
 		} else {
 			val tile = tiles[index]!!
-			BTiles.eachDirection(tile.connections) { direction ->
+			BTiles.eachDirection(tile) { direction ->
 				val connectedIndex = direction.apply(index)
 				if (valid(connectedIndex)) {
 					val connectedTile = tiles[connectedIndex]!!
-					if (connectedTile.connectsTo(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
+					if (connectedTile.contains(direction.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES))) {
 						options.add(TileToTileWalkMove(index, connectedIndex))
 					}
 				}
@@ -266,7 +266,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	private fun addTileToHomeWalkMoves(player: Int, index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val tile = tiles[index]!!
 		val homeConnection = homeConnections[player]
-		if (index == homeConnection.index && (sneak || canWalk(tile.connections, homeConnection.connections))) {
+		if (index == homeConnection.index && (sneak || canWalk(tile, homeConnection.connections))) {
 			options.add(TileToHomeWalkMove(index, player))
 		}
 	}
@@ -290,18 +290,10 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	override fun apply(move: Move) {
 		move.apply(this)
 		playerJustMoved = 3 - playerJustMoved
-		for (index in tiles.indicies) {
-			val tile = tiles[index]!!
-			if (tile.objective != null) {
-				for (player in tile.players) {
-					players[player].collected.add(tile.objective)
-				}
-			}
-		}
 	}
 
 	override fun clone(): Board {
-		val clone = Board(homeConnections, tiles.clone { it?.clone() })
+		val clone = Board(homeConnections, tiles.clone())
 		clone.playerJustMoved = playerJustMoved
 		clone.players = players.map { it.clone() }
 		clone.homes = homes.map { it.clone() }
@@ -317,9 +309,9 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		for (row in 0 until tiles.rows) {
 			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
-				out.append(if (tile?.players?.contains(0) == true) '0' else ' ')
-				out.append(if (tile?.connectsTo(Direction.NORTH) == true) '║' else ' ')
-				out.append(if (tile?.players?.contains(1) == true) '1' else ' ')
+				out.append(if (tile?.contains(players[0]) == true) '0' else ' ')
+				out.append(if (tile?.contains(Direction.NORTH) == true) '║' else ' ')
+				out.append(if (tile?.contains(players[1]) == true) '1' else ' ')
 			}
 			out.append("\n")
 			for (col in 0 until tiles.cols) {
@@ -327,17 +319,17 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 				if (tile == null) {
 					out.append(" / ")
 				} else {
-					out.append(if (tile.connectsTo(Direction.WEST)) '═' else ' ')
-					out.append(if (tile.objective != null) 'G' else '╬')
-					out.append(if (tile.connectsTo(Direction.EAST)) '═' else ' ')
+					out.append(if (tile.contains(Direction.WEST)) '═' else ' ')
+					out.append(if (!tile.containsNoObjectives()) 'G' else '╬')
+					out.append(if (tile.contains(Direction.EAST)) '═' else ' ')
 				}
 			}
 			out.append("\n")
 			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
-				out.append(if (tile?.players?.contains(3) == true) '3' else ' ')
-				out.append(if (tile?.connectsTo(Direction.SOUTH) == true) '║' else ' ')
-				out.append(if (tile?.players?.contains(2) == true) '2' else ' ')
+				out.append(if (tile?.contains(players[3]) == true) '3' else ' ')
+				out.append(if (tile?.contains(Direction.SOUTH) == true) '║' else ' ')
+				out.append(if (tile?.contains(players[2]) == true) '2' else ' ')
 			}
 			out.append("\n")
 		}

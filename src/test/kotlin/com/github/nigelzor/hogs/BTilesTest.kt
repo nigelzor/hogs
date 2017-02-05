@@ -11,36 +11,54 @@ import kotlin.test.assertFalse
 class BTilesTest {
 	companion object {
 		val RANDOM = Random()
-
-		val north = 1 shl 0
-		val east = 1 shl 1
-		val south = 1 shl 2
-		val west = 1 shl 3
 	}
 
 	@Test fun testRotations() {
-		assertEquals(north, BTiles.rotate(north, Rotation.ZERO_DEGREES))
-		assertEquals(east, BTiles.rotate(north, Rotation.NINETY_DEGREES))
-		assertEquals(south, BTiles.rotate(north, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
-		assertEquals(west, BTiles.rotate(north, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
+		assertEquals(BTiles.NORTH, BTiles.rotate(BTiles.NORTH, Rotation.ZERO_DEGREES))
+		assertEquals(BTiles.EAST, BTiles.rotate(BTiles.NORTH, Rotation.NINETY_DEGREES))
+		assertEquals(BTiles.SOUTH, BTiles.rotate(BTiles.NORTH, Rotation.ONE_HUNDRED_EIGHTY_DEGREES))
+		assertEquals(BTiles.WEST, BTiles.rotate(BTiles.NORTH, Rotation.TWO_HUNDRED_SEVENTY_DEGREES))
 	}
 
 	@Test fun testContains() {
-		assertTrue(BTiles.contains(north, Direction.NORTH))
-		assertFalse(BTiles.contains(north, Direction.EAST))
-		assertFalse(BTiles.contains(north, Direction.SOUTH))
-		assertFalse(BTiles.contains(north, Direction.WEST))
+		assertTrue(BTiles.contains(BTiles.NORTH, Direction.NORTH))
+		assertFalse(BTiles.contains(BTiles.NORTH, Direction.EAST))
+		assertFalse(BTiles.contains(BTiles.NORTH, Direction.SOUTH))
+		assertFalse(BTiles.contains(BTiles.NORTH, Direction.WEST))
 
-		assertTrue(BTiles.contains(east, Direction.EAST))
-		assertTrue(BTiles.contains(south, Direction.SOUTH))
-		assertTrue(BTiles.contains(west, Direction.WEST))
+		assertTrue(BTiles.contains(BTiles.EAST, Direction.EAST))
+		assertTrue(BTiles.contains(BTiles.SOUTH, Direction.SOUTH))
+		assertTrue(BTiles.contains(BTiles.WEST, Direction.WEST))
 	}
 
-	@Test fun testBits() {
-		assertEquals(north, Direction.NORTH.bits)
-		assertEquals(east, Direction.EAST.bits)
-		assertEquals(south, Direction.SOUTH.bits)
-		assertEquals(west, Direction.WEST.bits)
+	@Test fun testDirectionBits() {
+		assertEquals(BTiles.NORTH, Direction.NORTH.bits)
+		assertEquals(BTiles.EAST, Direction.EAST.bits)
+		assertEquals(BTiles.SOUTH, Direction.SOUTH.bits)
+		assertEquals(BTiles.WEST, Direction.WEST.bits)
+	}
+
+	@Test fun testObjectiveBits() {
+		assertEquals(BTiles.OBJECTIVE_ONE, Objective.ONE.bits)
+		assertEquals(BTiles.OBJECTIVE_TWO, Objective.TWO.bits)
+		assertEquals(BTiles.OBJECTIVE_THREE, Objective.THREE.bits)
+		assertEquals(BTiles.OBJECTIVE_FOUR, Objective.FOUR.bits)
+	}
+
+	@Test fun testPlayerBits() {
+		assertEquals(BTiles.PLAYER_ONE, Colour.BLUE.bits)
+		assertEquals(BTiles.PLAYER_TWO, Colour.YELLOW.bits)
+		assertEquals(BTiles.PLAYER_THREE, Colour.RED.bits)
+		assertEquals(BTiles.PLAYER_FOUR, Colour.GREEN.bits)
+	}
+
+	@Test fun testRotateWithContents() {
+		val tile = BTiles.OBJECTIVE_THREE or BTiles.PLAYER_TWO or BTiles.NORTH
+		Rotation.values().forEach {
+			val rotated = BTiles.rotate(tile, it)
+			assertTrue(BTiles.contains(rotated, Player(Colour.YELLOW)))
+			assertTrue(BTiles.contains(rotated, Objective.THREE))
+		}
 	}
 
 	@Test fun testManyRotationsOfEmpty() {

@@ -80,7 +80,9 @@ fun <Move: Any> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean =
 	// return the most-visited node
 	val sortedMoves = rootnode.childNodes.sortedBy { it.visits }
 
-	if (verbose) sortedMoves.forEach(::println)
+	if (verbose) {
+		sortedMoves.takeLast(10).forEach(::println)
+	}
 
 	return sortedMoves.last().move!!
 }
@@ -117,9 +119,9 @@ fun <T: Any> playUCT(state: GameState<T>) {
 	sim@ do {
 		while (!state.possible().isEmpty()) {
 			println(state)
-			val itermax = if (state.playerJustMoved == 1) 10000 else 2500
+			val itermax = if (state.playerJustMoved == 1) 15000 else 5000
 			val startOfTurn = System.nanoTime()
-			val m = UCT(rootstate = state, itermax = itermax, verbose = false)
+			val m = UCT(rootstate = state, itermax = itermax, verbose = true)
 			println("Turn ${turn++} Best Move: ${m} in ${formatNanos(System.nanoTime() - startOfTurn)}")
 			state.apply(m)
 			if (turn > 30) {
