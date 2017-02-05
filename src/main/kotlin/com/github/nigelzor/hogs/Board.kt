@@ -21,8 +21,6 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		get() = step.player.ordinal
 
 	companion object {
-		val BRAINDEAD: Int = -1
-
 		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT))
 
 		fun defaultBoard(): Board {
@@ -128,8 +126,6 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			return POSSIBLE_ROLLS
 		}
 
-		if (piToMove == BRAINDEAD) return setOf(NoMove.INSTANCE)
-
 		if (step is ActStep) {
 			if (rolled == Rolled.MAP) {
 				return possibleWalkMoves(piToMove, true)
@@ -161,8 +157,6 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		if (step is RollStep) {
 			return random(POSSIBLE_ROLLS, rng)
 		}
-
-		if (piToMove == BRAINDEAD) return NoMove.INSTANCE
 
 		if (step is ActStep) {
 			if (rolled == Rolled.MAP) {
