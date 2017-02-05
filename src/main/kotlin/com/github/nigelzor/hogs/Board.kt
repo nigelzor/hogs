@@ -8,20 +8,22 @@ import com.github.nigelzor.mcts.random
 import kotlin.Int
 import kotlin.Int as BTile
 
-data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>): GameState<Move> {
-	override var playerJustMoved = 2 // UCT player: { 1, 2 }
 
-	val piToMove: Int // hogs player: { 0..3 }
-		get() {
-			if (playerJustMoved == 1) return 2
-			if (playerJustMoved == 2) return 0
-			throw IllegalStateException()
+data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>, var step: Step, var rolled: Rolled): GameState<Move> {
+	override val playerJustMoved: Int // UCT player: { 1, 2 }
+		get() = when (step.player.ordinal) {
+			0 -> 2
+			2 -> 1
+			else -> throw IllegalStateException()
 		}
 
-	companion object {
-		val PLAYERS: Int = 4
+	val piToMove: Int // hogs player: { 0..3 }
+		get() = step.player.ordinal
 
+	companion object {
 		val BRAINDEAD: Int = -1
+
+		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT))
 
 		fun defaultBoard(): Board {
 			val players = Colour.values().map { Player(it) }.toMutableList()
@@ -52,8 +54,39 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			tiles[2, 2] = TileFactory.potions()
 			tiles[2, 1] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
 
-			return Board(players, homes, tiles)
+			return Board(players, homes, tiles, RollStep(players.first().colour), Rolled.MAP)
 		}
+	}
+
+	enum class Rolled {
+		MAP, ROTATE, LIFT
+	}
+
+	interface Step {
+		val player: Colour
+	}
+
+	data class RollStep(override val player: Colour): Step
+
+	data class ActStep(override val player: Colour): Step
+
+	data class MoveStep(override val player: Colour): Step
+
+	fun next(step: Step): Step {
+		return when (step) {
+			is RollStep -> ActStep(step.player)
+			is ActStep -> MoveStep(step.player)
+			is MoveStep -> RollStep(nextPlayer(step.player))
+			else -> throw IllegalStateException()
+		}
+	}
+
+	private fun nextPlayer(player: Colour): Colour {
+		return Colour.values()[when (player.ordinal) {
+			0 -> 2
+			2 -> 0
+			else -> throw IllegalStateException()
+		}]
 	}
 
 	private fun findPlayerTile(player: Int): Index? {
@@ -91,13 +124,30 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			}
 		}
 
+		if (step is RollStep) {
+			return POSSIBLE_ROLLS
+		}
+
 		if (piToMove == BRAINDEAD) return setOf(NoMove.INSTANCE)
 
-		val options = HashSet<Move>()
-		addMapWalkMoves(piToMove, options)
-		addRotateWalkMoves(piToMove, options)
-		addLiftWalkMoves(piToMove, options)
-		return options
+		if (step is ActStep) {
+			if (rolled == Rolled.MAP) {
+				return possibleWalkMoves(piToMove, true)
+			}
+			if (rolled == Rolled.ROTATE) {
+				return possibleRotateMoves()
+			}
+			if (rolled == Rolled.LIFT) {
+				return possibleLiftMoves()
+			}
+		}
+
+		if (step is MoveStep) {
+			// "you may also choose to stay where you are"
+			return possibleWalkMoves(piToMove, false) + NoMove.INSTANCE
+		}
+
+		throw IllegalStateException("unhandled step $step")
 	}
 
 	override fun randomMove(rng: Random): Move? {
@@ -107,85 +157,56 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			}
 		}
 
+		// FIXME-NG: use correct distribution
+		if (step is RollStep) {
+			return random(POSSIBLE_ROLLS, rng)
+		}
+
 		if (piToMove == BRAINDEAD) return NoMove.INSTANCE
 
-		val kind = rng.nextInt(3)
-		if (kind == 0) {
-			val options = possibleWalkMoves(piToMove, true) // should never be empty, since we've got the map
-			val walkMove = random(options, rng)
-			return andThenWalkRandomly(rng, walkMove)
-		} else if (kind == 1) {
-			val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
-			var index: Index
-			do {
-				index = random(tiles.indicies, rng)
-			} while (!okToRotate(index)) // "you may not rotate classrooms"
-			val rotateMove = RotateMove(index, rotation)
-			return andThenWalkRandomly(rng, rotateMove)
-		} else if (kind == 2) {
-			var index: Index
-			do {
-				index = random(tiles.indicies, rng)
-			} while (!okToLift(index))
-			var row = index.row
-			var col = index.col
-			if (rng.nextBoolean()) {
-				row = rng.nextInt(tiles.rows - 1)
-				if (row >= index.row) row += 1
-			} else {
-				col = rng.nextInt(tiles.cols - 1)
-				if (col >= index.col) col += 1
+		if (step is ActStep) {
+			if (rolled == Rolled.MAP) {
+				return random(possibleWalkMoves(piToMove, true), rng)
 			}
-			val liftMove = LiftMove(index, Index(row, col))
-			return andThenWalkRandomly(rng, liftMove)
-		}
-		return NoMove.INSTANCE
-	}
-
-	private fun andThenWalkRandomly(rng: Random, firstMove: Move): Move {
-		// 5% chance to stop after the first step
-		// this is not equally-weighted, but faster to skip determining how many other options there are
-		if (rng.nextInt(20) != 0) {
-			val b2 = clone()
-			firstMove.apply(b2)
-			val allWalks = b2.possibleWalkMoves(piToMove)
-			if (!allWalks.isEmpty()) {
-				return CompositeMove(listOf(firstMove, random(allWalks, rng)))
+			if (rolled == Rolled.ROTATE) {
+				val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
+				var index: Index
+				do {
+					index = random(tiles.indicies, rng)
+				} while (!okToRotate(index)) // "you may not rotate classrooms"
+				return RotateMove(index, rotation)
+			}
+			if (rolled == Rolled.LIFT) {
+				var index: Index
+				do {
+					index = random(tiles.indicies, rng)
+				} while (!okToLift(index))
+				var row = index.row
+				var col = index.col
+				if (rng.nextBoolean()) {
+					row = rng.nextInt(tiles.rows - 1)
+					if (row >= index.row) row += 1
+				} else {
+					col = rng.nextInt(tiles.cols - 1)
+					if (col >= index.col) col += 1
+				}
+				return LiftMove(index, Index(row, col))
 			}
 		}
-		return firstMove
-	}
 
-	private fun addMapWalkMoves(player: Int, options: MutableSet<Move>) {
-		val allWalks = possibleWalkMoves(player, true)
-		for (walkMove in allWalks) {
-			andThenWalk(player, walkMove, options)
+		if (step is MoveStep) {
+			// "you may also choose to stay where you are"
+			if (rng.nextInt(20) == 0) {
+				return NoMove.INSTANCE
+			}
+			val possibleWalkMoves = possibleWalkMoves(piToMove, false)
+			if (possibleWalkMoves.isEmpty()) {
+				return NoMove.INSTANCE
+			}
+			return random(possibleWalkMoves, rng)
 		}
-	}
 
-	private fun addRotateWalkMoves(player: Int, options: MutableSet<Move>) {
-		val allRotations = possibleRotateMoves()
-		for (rotateMove in allRotations) {
-			andThenWalk(player, rotateMove, options)
-		}
-	}
-
-	private fun addLiftWalkMoves(player: Int, options: MutableSet<Move>) {
-		val allLifts = possibleLiftMoves()
-		for (shiftMove in allLifts) {
-			andThenWalk(player, shiftMove, options)
-		}
-	}
-
-	private fun andThenWalk(player: Int, firstMove: Move, options: MutableSet<Move>) {
-		options.add(firstMove) // "you may also choose to stay where you are"
-
-		val b2 = clone()
-		firstMove.apply(b2)
-		val allWalks = b2.possibleWalkMoves(player)
-		for (walkMove in allWalks) {
-			options.add(CompositeMove(listOf(firstMove, walkMove)))
-		}
+		throw IllegalStateException("unhandled step $step")
 	}
 
 	fun possibleRotateMoves(): Set<RotateMove> {
@@ -291,19 +312,18 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 	override fun apply(move: Move) {
 		move.apply(this)
-		playerJustMoved = 3 - playerJustMoved
+		step = next(step)
 	}
 
 	override fun clone(): Board {
-		val clone = copy(players=players.toMutableList(), homes=homes.toMutableList(), tiles=tiles.clone())
-		clone.playerJustMoved = playerJustMoved
-		return clone
+		return copy(players=players.toMutableList(), homes=homes.toMutableList(), tiles=tiles.clone())
 	}
 
 	fun print(out: Appendable) {
+		out.append("Step: $step\n")
 		out.append("Players:")
-		players.forEachIndexed { i, player ->
-			out.append(" %s=".format(i))
+		players.forEach { player ->
+			out.append(" ${player.colour}=")
 			if (player.collected.contains(Objective.ONE)) out.append('A')
 			if (player.collected.contains(Objective.TWO)) out.append('B')
 			if (player.collected.contains(Objective.THREE)) out.append('C')
