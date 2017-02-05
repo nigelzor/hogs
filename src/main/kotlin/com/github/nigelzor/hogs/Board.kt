@@ -5,17 +5,11 @@ import com.github.nigelzor.mcts.GameState
 import java.util.Random
 import com.github.nigelzor.mcts.random
 
-import kotlin.Int
 import kotlin.Int as BTile
 
-
-data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>, var step: Step, var rolled: Rolled): GameState<Move> {
-	override val playerJustMoved: Int // UCT player: { 1, 2 }
-		get() = when (step.player.ordinal) {
-			0 -> 2
-			2 -> 1
-			else -> throw IllegalStateException()
-		}
+data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>, var step: Step, var rolled: Rolled): GameState<Move, Colour> {
+	override val playerJustMoved: Colour // UCT player: { 1, 2 }
+		get() = prev(step).player
 
 	companion object {
 		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT))
@@ -76,6 +70,15 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		}
 	}
 
+	fun prev(step: Step): Step {
+		return when (step) {
+			is RollStep -> MoveStep(prevPlayer(step.player))
+			is ActStep -> RollStep(step.player)
+			is MoveStep -> ActStep(step.player)
+			else -> throw IllegalStateException()
+		}
+	}
+
 	private fun nextPlayer(player: Colour): Colour {
 		return Colour.values()[when (player.ordinal) {
 			0 -> 2
@@ -83,6 +86,8 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			else -> throw IllegalStateException()
 		}]
 	}
+
+	private fun prevPlayer(player: Colour) = nextPlayer(player) // in a two player game... yeah
 
 	private fun findPlayerTile(player: Colour): Index? {
 		for (index in tiles.indicies) {
@@ -93,16 +98,10 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		return null
 	}
 
-	override fun result(playerJustMoved: Int): Double {
-		val pi = when (playerJustMoved) {
-			1 -> Colour.BLUE
-			2 -> Colour.RED
-			else -> throw IllegalStateException()
-		}
-
+	override fun result(playerJustMoved: Colour): Double {
 		for (player in Colour.values()) {
 			if (hasWon(player)) {
-				return if (player == pi) 1.0 else 0.0
+				return if (player == playerJustMoved) 1.0 else 0.0
 			}
 		}
 		throw IllegalStateException()

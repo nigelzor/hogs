@@ -3,18 +3,18 @@ package com.github.nigelzor.mcts
 import java.util.ArrayList
 import java.util.HashSet
 
-class Node<Move: Any>(val move: Move? = null, val parent: Node<Move>? = null, state: GameState<Move>) {
-	val childNodes: MutableList<Node<Move>> = ArrayList()
+class Node<M: Any, P: Any>(val move: M? = null, val parent: Node<M, P>? = null, state: GameState<M, P>) {
+	val childNodes: MutableList<Node<M, P>> = ArrayList()
 	var wins = 0.0
 	var visits = 0
 	val untriedMoves = HashSet(state.possible())
 	val playerJustMoved = state.playerJustMoved
 
-	fun select(): Node<Move>? {
+	fun select(): Node<M, P>? {
 		return childNodes.maxBy { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }
 	}
 
-	fun add(move: Move, state: GameState<Move>): Node<Move> {
+	fun add(move: M, state: GameState<M, P>): Node<M, P> {
 		val node = Node(move, this, state)
 		untriedMoves.remove(move)
 		childNodes.add(node)

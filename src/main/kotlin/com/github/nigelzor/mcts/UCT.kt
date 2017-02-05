@@ -36,7 +36,7 @@ fun <T> random(values: List<T>, rng: Random = random): T {
  * Return the best move from the rootstate.
  * Assumes 2 alternating players (player 1 starts), with game results in the range [0.0, 1.0].
  */
-fun <Move: Any> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean = false): Move {
+fun <M: Any, P: Any> UCT(rootstate: GameState<M, P>, itermax: Int, verbose: Boolean = false): M {
 	val rootnode = Node(state = rootstate)
 
 	for (i in 0..itermax) {
@@ -105,13 +105,13 @@ fun formatThree(num: Double): String {
 	return "%1.3f".format(num)
 }
 
-fun <T: Any> playUCT(state: GameState<T>) {
+fun <M: Any, P: Any> playUCT(state: GameState<M, P>) {
 	val startOfGame = System.nanoTime()
 	var turn = 0
 	sim@ do {
 		while (!state.possible().isEmpty()) {
 			println(state)
-			val itermax = if (state.playerJustMoved == 1) 25000 else 10000
+			val itermax = 10000
 			val startOfTurn = System.nanoTime()
 			val m = UCT(rootstate = state, itermax = itermax, verbose = true)
 			println("Turn ${turn++} Best Move: ${m} in ${formatNanos(System.nanoTime() - startOfTurn)}")
@@ -124,7 +124,7 @@ fun <T: Any> playUCT(state: GameState<T>) {
 		if (state.result(state.playerJustMoved) == 1.0)
 			println("Player ${state.playerJustMoved} wins!")
 		else if (state.result(state.playerJustMoved) == 0.0)
-			println("Player ${3 - state.playerJustMoved} wins!")
+			println("Player ${state.playerJustMoved} loses!")
 		else
 			println("Nobody wins!")
 	} while (false)
