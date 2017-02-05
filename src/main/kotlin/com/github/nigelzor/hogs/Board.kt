@@ -324,18 +324,18 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		out.append("Players:")
 		players.forEach { player ->
 			out.append(" ${player.colour}=")
-			if (player.collected.contains(Objective.ONE)) out.append('A')
-			if (player.collected.contains(Objective.TWO)) out.append('B')
-			if (player.collected.contains(Objective.THREE)) out.append('C')
-			if (player.collected.contains(Objective.FOUR)) out.append('D')
+			if (player.collected.contains(Objective.ONE)) out.append('1')
+			if (player.collected.contains(Objective.TWO)) out.append('2')
+			if (player.collected.contains(Objective.THREE)) out.append('3')
+			if (player.collected.contains(Objective.FOUR)) out.append('4')
 		}
 		out.append("\n")
 		for (row in 0 until tiles.rows) {
 			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
-				out.append(if (tile?.contains(players[0]) == true) '0' else ' ')
+				out.append(if (tile?.contains(Colour.BLUE) == true) 'B' else ' ')
 				out.append(if (tile?.contains(Direction.NORTH) == true) '║' else ' ')
-				out.append(if (tile?.contains(players[1]) == true) '1' else ' ')
+				out.append(if (tile?.contains(Colour.YELLOW) == true) 'Y' else ' ')
 			}
 			out.append("\n")
 			for (col in 0 until tiles.cols) {
@@ -346,10 +346,10 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 					out.append(if (tile.contains(Direction.WEST)) '═' else ' ')
 					// I wanted to use ①②③④, but they're double-wide
 					out.append(when {
-						tile.contains(Objective.ONE) -> 'A'
-						tile.contains(Objective.TWO) -> 'B'
-						tile.contains(Objective.THREE) -> 'C'
-						tile.contains(Objective.FOUR) -> 'D'
+						tile.contains(Objective.ONE) -> '1'
+						tile.contains(Objective.TWO) -> '2'
+						tile.contains(Objective.THREE) -> '3'
+						tile.contains(Objective.FOUR) -> '4'
 						else -> '╬'
 					})
 					out.append(if (tile.contains(Direction.EAST)) '═' else ' ')
@@ -358,9 +358,9 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			out.append("\n")
 			for (col in 0 until tiles.cols) {
 				val tile = tiles[row, col]
-				out.append(if (tile?.contains(players[3]) == true) '3' else ' ')
+				out.append(if (tile?.contains(Colour.GREEN) == true) 'G' else ' ')
 				out.append(if (tile?.contains(Direction.SOUTH) == true) '║' else ' ')
-				out.append(if (tile?.contains(players[2]) == true) '2' else ' ')
+				out.append(if (tile?.contains(Colour.RED) == true) 'R' else ' ')
 			}
 			out.append("\n")
 		}

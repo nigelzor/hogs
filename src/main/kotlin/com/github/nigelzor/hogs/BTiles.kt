@@ -72,6 +72,10 @@ object BTiles {
 	fun contains(tile: BTile, player: Player): Boolean {
 		return tile and player.colour.bits != 0
 	}
+
+	fun contains(tile: BTile, colour: Colour): Boolean {
+		return tile and colour.bits != 0
+	}
 }
 
 // adding extension methods on Int is pretty nasty, but effective
@@ -89,6 +93,10 @@ fun BTile.contains(objective: Objective): Boolean {
 
 fun BTile.contains(player: Player): Boolean {
 	return BTiles.contains(this, player)
+}
+
+fun BTile.contains(colour: Colour): Boolean {
+	return BTiles.contains(this, colour)
 }
 
 fun BTile.containsNoObjectives(): Boolean {

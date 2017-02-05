@@ -11,7 +11,7 @@ class Node<Move: Any>(val move: Move? = null, val parent: Node<Move>? = null, st
 	val playerJustMoved = state.playerJustMoved
 
 	fun select(): Node<Move>? {
-		return childNodes.sortedBy { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }.last()
+		return childNodes.maxBy { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }
 	}
 
 	fun add(move: Move, state: GameState<Move>): Node<Move> {
