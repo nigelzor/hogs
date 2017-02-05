@@ -66,10 +66,11 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 	}
 
 	override fun result(playerJustMoved: Int): Double {
-		val pi: Int
-		if (playerJustMoved == 1) pi = 0
-		else if (playerJustMoved == 2) pi = 2
-		else throw IllegalStateException()
+		val pi = when (playerJustMoved) {
+			1 -> 0
+			2 -> 2
+			else -> throw IllegalStateException()
+		}
 
 		for (i in players.indices) {
 			if (hasWon(i)) {
@@ -86,7 +87,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 	override fun possible(): Set<Move> {
 		for (i in players.indices) {
 			if (hasWon(i)) {
-				return hashSetOf() // game is over
+				return setOf() // game is over
 			}
 		}
 
@@ -324,12 +325,13 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 				} else {
 					out.append(if (tile.contains(Direction.WEST)) '═' else ' ')
 					// I wanted to use ①②③④, but they're double-wide
-					out.append(
-							if (tile.contains(Objective.ONE)) 'A'
-							else if (tile.contains(Objective.TWO)) 'B'
-							else if (tile.contains(Objective.THREE)) 'C'
-							else if (tile.contains(Objective.FOUR)) 'D'
-							else '╬')
+					out.append(when {
+						tile.contains(Objective.ONE) -> 'A'
+						tile.contains(Objective.TWO) -> 'B'
+						tile.contains(Objective.THREE) -> 'C'
+						tile.contains(Objective.FOUR) -> 'D'
+						else -> '╬'
+					})
 					out.append(if (tile.contains(Direction.EAST)) '═' else ' ')
 				}
 			}

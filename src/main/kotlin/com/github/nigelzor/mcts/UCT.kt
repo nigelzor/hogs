@@ -58,22 +58,14 @@ fun <Move: Any> UCT(rootstate: GameState<Move>, itermax: Int, verbose: Boolean =
 
 		// rollout - this can often be made orders of magnitude quicker using a state.randomMove() function
 		while (true) {
-			val move = state.randomMove(random)
-			if (move == null) {
-				break
-			}
+			val move = state.randomMove(random) ?: break
 			state.apply(move)
 		}
 
 		// backpropagate
 		while (true) {
 			node.update(state.result(node.playerJustMoved))
-			val next = node.parent
-			if (next == null) {
-				break
-			} else {
-				node = next
-			}
+			node = node.parent ?: break
 		}
 	}
 
