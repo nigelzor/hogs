@@ -2,7 +2,8 @@ package com.github.nigelzor.hogs
 
 data class TileToTileWalkMove(val from: Index, val to: Index): Move {
 	override fun apply(board: Board) {
-		val player = board.players[board.piToMove]
+		val pi = board.piToMove
+		val player = board.players[pi]
 		val source = board.tiles[from]!!
 		val destination = board.tiles[to]!!
 
@@ -12,7 +13,7 @@ data class TileToTileWalkMove(val from: Index, val to: Index): Move {
 		board.tiles[from] = source.without(player)
 		board.tiles[to] = destination.with(player)
 		BTiles.eachObjective(destination) {
-			player.collected.add(it)
+			board.players[pi] = player.with(it)
 		}
 	}
 }

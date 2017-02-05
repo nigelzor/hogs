@@ -8,9 +8,9 @@ data class TileToHomeWalkMove(val from: Index, val to: Int): Move {
 		val destination = board.homes[to]
 
 		assert(source.contains(player), { "player not at source position" })
-		assert(!destination.players.contains(pi), { "player already at destination position" })
+		assert(!destination.contains(player), { "player already at destination position" })
 
 		board.tiles[from] = source.without(player)
-		destination.players.add(pi)
+		board.homes[to] = destination.with(player)
 	}
 }

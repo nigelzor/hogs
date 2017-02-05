@@ -7,13 +7,13 @@ data class HomeToTileWalkMove(val from: Int, val to: Index): Move {
 		val source = board.homes[from]
 		val destination = board.tiles[to]!!
 
-		assert(source.players.contains(pi), { "player not at source position" })
+		assert(source.contains(player), { "player not at source position" })
 		assert(!destination.contains(player), { "player already at destination position" })
 
-		source.players.remove(pi)
+		board.homes[from] = source.without(player)
 		board.tiles[to] = destination.with(player)
 		BTiles.eachObjective(destination) {
-			player.collected.add(it)
+			board.players[pi] = player.with(it)
 		}
 	}
 }

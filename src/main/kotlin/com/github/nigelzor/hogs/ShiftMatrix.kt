@@ -98,12 +98,8 @@ class ShiftMatrix<T: Any>(val rows: Int, val cols: Int, val values: Array<T?>) {
 		}
 	}
 
-	fun clone(cloner: (T?) -> T? = { it }): ShiftMatrix<T> {
-		val newValues = values.copyOf()
-		for (i in newValues.indices) {
-			newValues[i] = cloner(newValues[i])
-		}
-		return ShiftMatrix(rows, cols, newValues)
+	fun clone(): ShiftMatrix<T> {
+		return ShiftMatrix(rows, cols, values.copyOf())
 	}
 
 	override fun equals(other: Any?): Boolean {

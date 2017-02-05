@@ -1,11 +1,13 @@
 package com.github.nigelzor.hogs
 
-import java.util.HashSet
+data class Player(val colour: Colour, val collected: Int = 0) {
 
-public data class Player(val colour: Colour, val collected: MutableSet<Objective> = HashSet()) {
+	fun with(objective: Objective): Player {
+		return copy(collected = collected or objective.bits)
+	}
 
-	public fun clone(): Player {
-		return copy(collected=HashSet(collected))
+	fun collectedEverything(): Boolean {
+		return collected == Objective.ALL_BITS
 	}
 
 }

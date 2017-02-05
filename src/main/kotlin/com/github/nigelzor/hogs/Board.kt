@@ -8,7 +8,7 @@ import com.github.nigelzor.mcts.random
 import kotlin.Int
 import kotlin.Int as BTile
 
-data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatrix<BTile>): GameState<Move> {
+data class Board(var players: MutableList<Player>, var homes: MutableList<Home>, var tiles: ShiftMatrix<BTile>): GameState<Move> {
 	override var playerJustMoved = 2 // UCT player: { 1, 2 }
 
 	val piToMove: Int // hogs player: { 0..3 }
@@ -18,20 +18,21 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			throw IllegalStateException()
 		}
 
-	var players = Colour.values().map { Player(it) }
-	var homes = players.mapIndexed { i, player -> Home(player.colour, hashSetOf(i)) }
-
 	companion object {
 		val PLAYERS: Int = 4
 
 		val BRAINDEAD: Int = -1
 
 		fun defaultBoard(): Board {
-			val homeConnections = listOf(
-					HomeConnection(0, 0, BTiles.fromDirections(Direction.SOUTH, Direction.EAST)),
-					HomeConnection(0, 3, BTiles.fromDirections(Direction.SOUTH, Direction.WEST)),
-					HomeConnection(3, 3, BTiles.fromDirections(Direction.NORTH, Direction.WEST)),
-					HomeConnection(3, 0, BTiles.fromDirections(Direction.NORTH, Direction.EAST)))
+			val players = Colour.values().map { Player(it) }.toMutableList()
+
+			val homes = listOf(
+					Home(0, 0, BTiles.fromDirections(Direction.SOUTH, Direction.EAST)),
+					Home(0, 3, BTiles.fromDirections(Direction.SOUTH, Direction.WEST)),
+					Home(3, 3, BTiles.fromDirections(Direction.NORTH, Direction.WEST)),
+					Home(3, 0, BTiles.fromDirections(Direction.NORTH, Direction.EAST)))
+					.mapIndexed { i, home -> home.with(players[i]) }
+					.toMutableList()
 
 			val tiles = ShiftMatrix.empty<BTile>(4, 4)
 			tiles[0, 0] = TileFactory.tee()
@@ -51,7 +52,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 			tiles[2, 2] = TileFactory.potions()
 			tiles[2, 1] = TileFactory.creatures().rotate(Rotation.TWO_HUNDRED_SEVENTY_DEGREES)
 
-			return Board(homeConnections, tiles)
+			return Board(players, homes, tiles)
 		}
 	}
 
@@ -79,7 +80,7 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	}
 
 	private fun hasWon(player: Int): Boolean {
-		return players[player].collected.size == 4 && homes[player].players.contains(player)
+		return players[player].collectedEverything() && homes[player].contains(players[player])
 	}
 
 	override fun possible(): Set<Move> {
@@ -233,10 +234,10 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 		return (from and to and 0x0F) != 0
 	}
 
-	private fun addHomeToTileWalkMoves(player: Int, homeConnection: HomeConnection, sneak: Boolean = false, options: MutableCollection<Move>) {
+	private fun addHomeToTileWalkMoves(player: Int, homeConnection: Home, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val connectedIndex = homeConnection.index
 		val connectedTile = tiles[connectedIndex]
-		if (connectedTile != null && (sneak || canWalk(homeConnection.connections, connectedTile))) {
+		if (connectedTile != null && (sneak || canWalk(homeConnection.tile, connectedTile))) {
 			options.add(HomeToTileWalkMove(player, connectedIndex))
 		}
 	}
@@ -265,16 +266,16 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 
 	private fun addTileToHomeWalkMoves(player: Int, index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val tile = tiles[index]!!
-		val homeConnection = homeConnections[player]
-		if (index == homeConnection.index && (sneak || canWalk(tile, homeConnection.connections))) {
+		val homeConnection = homes[player]
+		if (index == homeConnection.index && (sneak || canWalk(tile, homeConnection.tile))) {
 			options.add(TileToHomeWalkMove(index, player))
 		}
 	}
 
 	private fun addWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
 		val options = HashSet<Move>()
-		if (player in homes[player].players) {
-			addHomeToTileWalkMoves(player, homeConnections[player], sneak, options)
+		if (homes[player].contains(players[player])) {
+			addHomeToTileWalkMoves(player, homes[player], sneak, options)
 		} else {
 			val index = findPlayerTile(player)!!
 			addTileToTileWalkMoves(index, sneak, options)
@@ -293,10 +294,8 @@ data class Board(var homeConnections: List<HomeConnection>, var tiles: ShiftMatr
 	}
 
 	override fun clone(): Board {
-		val clone = Board(homeConnections, tiles.clone())
+		val clone = copy(players=players.toMutableList(), homes=homes.toMutableList(), tiles=tiles.clone())
 		clone.playerJustMoved = playerJustMoved
-		clone.players = players.map { it.clone() }
-		clone.homes = homes.map { it.clone() }
 		return clone
 	}
 
