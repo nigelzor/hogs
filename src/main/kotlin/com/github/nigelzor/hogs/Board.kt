@@ -17,9 +17,6 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			else -> throw IllegalStateException()
 		}
 
-	val piToMove: Int // hogs player: { 0..3 }
-		get() = step.player.ordinal
-
 	companion object {
 		val POSSIBLE_ROLLS = setOf(RollMove(Rolled.MAP), RollMove(Rolled.ROTATE), RollMove(Rolled.LIFT))
 
@@ -31,7 +28,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 					Home(0, 3, BTiles.fromDirections(Direction.SOUTH, Direction.WEST)),
 					Home(3, 3, BTiles.fromDirections(Direction.NORTH, Direction.WEST)),
 					Home(3, 0, BTiles.fromDirections(Direction.NORTH, Direction.EAST)))
-					.mapIndexed { i, home -> home.with(players[i]) }
+					.mapIndexed { i, home -> home.with(players[i].colour) }
 					.toMutableList()
 
 			val tiles = ShiftMatrix.empty<BTile>(4, 4)
@@ -87,9 +84,9 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		}]
 	}
 
-	private fun findPlayerTile(player: Int): Index? {
+	private fun findPlayerTile(player: Colour): Index? {
 		for (index in tiles.indicies) {
-			if (tiles[index]?.contains(players[player]) == true) {
+			if (tiles[index]?.contains(player) == true) {
 				return index
 			}
 		}
@@ -98,26 +95,26 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 	override fun result(playerJustMoved: Int): Double {
 		val pi = when (playerJustMoved) {
-			1 -> 0
-			2 -> 2
+			1 -> Colour.BLUE
+			2 -> Colour.RED
 			else -> throw IllegalStateException()
 		}
 
-		for (i in players.indices) {
-			if (hasWon(i)) {
-				return if (i == pi) 1.0 else 0.0
+		for (player in Colour.values()) {
+			if (hasWon(player)) {
+				return if (player == pi) 1.0 else 0.0
 			}
 		}
 		throw IllegalStateException()
 	}
 
-	private fun hasWon(player: Int): Boolean {
-		return players[player].collectedEverything() && homes[player].contains(players[player])
+	private fun hasWon(player: Colour): Boolean {
+		return players[player].collectedEverything() && homes[player].contains(player)
 	}
 
 	override fun possible(): Set<Move> {
-		for (i in players.indices) {
-			if (hasWon(i)) {
+		for (player in Colour.values()) {
+			if (hasWon(player)) {
 				return setOf() // game is over
 			}
 		}
@@ -128,7 +125,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 		if (step is ActStep) {
 			if (rolled == Rolled.MAP) {
-				return possibleWalkMoves(piToMove, true)
+				return possibleWalkMoves(step.player, true)
 			}
 			if (rolled == Rolled.ROTATE) {
 				return possibleRotateMoves()
@@ -140,15 +137,15 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 		if (step is MoveStep) {
 			// "you may also choose to stay where you are"
-			return possibleWalkMoves(piToMove, false) + NoMove.INSTANCE
+			return possibleWalkMoves(step.player, false) + NoMove.INSTANCE
 		}
 
 		throw IllegalStateException("unhandled step $step")
 	}
 
 	override fun randomMove(rng: Random): Move? {
-		for (i in players.indices) {
-			if (hasWon(i)) {
+		for (player in Colour.values()) {
+			if (hasWon(player)) {
 				return null // game is over
 			}
 		}
@@ -160,7 +157,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 
 		if (step is ActStep) {
 			if (rolled == Rolled.MAP) {
-				return random(possibleWalkMoves(piToMove, true), rng)
+				return random(possibleWalkMoves(step.player, true), rng)
 			}
 			if (rolled == Rolled.ROTATE) {
 				val rotation = Rotation.values()[rng.nextInt(3) + 1] // disallow ZERO_DEGREES
@@ -193,7 +190,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 			if (rng.nextInt(20) == 0) {
 				return NoMove.INSTANCE
 			}
-			val possibleWalkMoves = possibleWalkMoves(piToMove, false)
+			val possibleWalkMoves = possibleWalkMoves(step.player, false)
 			if (possibleWalkMoves.isEmpty()) {
 				return NoMove.INSTANCE
 			}
@@ -250,7 +247,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		return (from.rotate(Rotation.ONE_HUNDRED_EIGHTY_DEGREES) and to and 0x0F) != 0
 	}
 
-	private fun addHomeToTileWalkMoves(player: Int, homeConnection: Home, sneak: Boolean = false, options: MutableCollection<Move>) {
+	private fun addHomeToTileWalkMoves(player: Colour, homeConnection: Home, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val connectedIndex = homeConnection.index
 		val connectedTile = tiles[connectedIndex]
 		if (connectedTile != null && (sneak || canWalk(homeConnection.tile, connectedTile))) {
@@ -280,7 +277,7 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		}
 	}
 
-	private fun addTileToHomeWalkMoves(player: Int, index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
+	private fun addTileToHomeWalkMoves(player: Colour, index: Index, sneak: Boolean = false, options: MutableCollection<Move>) {
 		val tile = tiles[index]!!
 		val homeConnection = homes[player]
 		if (index == homeConnection.index && (sneak || canWalk(tile, homeConnection.tile))) {
@@ -288,9 +285,9 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		}
 	}
 
-	fun possibleWalkMoves(player: Int, sneak: Boolean = false): Set<Move> {
+	fun possibleWalkMoves(player: Colour, sneak: Boolean = false): Set<Move> {
 		val options = HashSet<Move>()
-		if (homes[player].contains(players[player])) {
+		if (homes[player].contains(player)) {
 			addHomeToTileWalkMoves(player, homes[player], sneak, options)
 		} else {
 			val index = findPlayerTile(player)!!

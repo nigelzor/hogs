@@ -9,18 +9,18 @@ import java.util.*
 class BoardTest {
 	@Test fun testFirstTurnWalkMoves() {
 		val board = Board.defaultBoard()
-		var potentialMoves = board.possibleWalkMoves(board.piToMove)
+		var potentialMoves = board.possibleWalkMoves(board.step.player)
 		assertThat(potentialMoves, hasSize(1))
 
 		// but if the corner tile is a L facing the wrong way
 		val tmp = board.tiles[0, 0]
 		board.tiles[0, 0] = board.tiles[0, 1]
 		board.tiles[0, 1] = tmp
-		potentialMoves = board.possibleWalkMoves(board.piToMove)
+		potentialMoves = board.possibleWalkMoves(board.step.player)
 		assertThat(potentialMoves, hasSize(0))
 
 		// unless you've got the map
-		potentialMoves = board.possibleWalkMoves(board.piToMove, true)
+		potentialMoves = board.possibleWalkMoves(board.step.player, true)
 		assertThat(potentialMoves, hasSize(1))
 	}
 

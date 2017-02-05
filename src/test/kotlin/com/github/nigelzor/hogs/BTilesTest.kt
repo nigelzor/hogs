@@ -56,7 +56,7 @@ class BTilesTest {
 		val tile = BTiles.OBJECTIVE_THREE or BTiles.PLAYER_TWO or BTiles.NORTH
 		Rotation.values().forEach {
 			val rotated = BTiles.rotate(tile, it)
-			assertTrue(BTiles.contains(rotated, Player(Colour.YELLOW)))
+			assertTrue(BTiles.contains(rotated, Colour.YELLOW))
 			assertTrue(BTiles.contains(rotated, Objective.THREE))
 		}
 	}

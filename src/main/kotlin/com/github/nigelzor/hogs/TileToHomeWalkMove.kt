@@ -1,9 +1,8 @@
 package com.github.nigelzor.hogs
 
-data class TileToHomeWalkMove(val from: Index, val to: Int): Move {
+data class TileToHomeWalkMove(val from: Index, val to: Colour): Move {
 	override fun apply(board: Board) {
-		val pi = board.piToMove
-		val player = board.players[pi]
+		val player = board.step.player
 		val source = board.tiles[from]!!
 		val destination = board.homes[to]
 

@@ -69,10 +69,6 @@ object BTiles {
 		return tile and objective.bits != 0
 	}
 
-	fun contains(tile: BTile, player: Player): Boolean {
-		return tile and player.colour.bits != 0
-	}
-
 	fun contains(tile: BTile, colour: Colour): Boolean {
 		return tile and colour.bits != 0
 	}
@@ -91,10 +87,6 @@ fun BTile.contains(objective: Objective): Boolean {
 	return BTiles.contains(this, objective)
 }
 
-fun BTile.contains(player: Player): Boolean {
-	return BTiles.contains(this, player)
-}
-
 fun BTile.contains(colour: Colour): Boolean {
 	return BTiles.contains(this, colour)
 }
@@ -111,10 +103,10 @@ fun BTile.with(objective: Objective): BTile {
 	return this or objective.bits
 }
 
-fun BTile.with(player: Player): BTile {
-	return this or player.colour.bits
+fun BTile.with(colour: Colour): BTile {
+	return this or colour.bits
 }
 
-fun BTile.without(player: Player): BTile {
-	return this and player.colour.bits.inv()
+fun BTile.without(colour: Colour): BTile {
+	return this and colour.bits.inv()
 }
