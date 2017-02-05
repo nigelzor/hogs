@@ -6,6 +6,7 @@ interface GameState<Move: Any, Player: Any> {
 	val playerJustMoved: Player
 	fun clone(): GameState<Move, Player> // should return This (once implemented)
 	fun apply(move: Move)
+	fun nextMoveIsRandom(): Boolean = false
 	fun possible(): Set<Move>
 	fun randomMove(rng: Random): Move? {
 		val possible = possible()

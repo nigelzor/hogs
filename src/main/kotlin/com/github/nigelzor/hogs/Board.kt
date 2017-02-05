@@ -48,10 +48,6 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 		}
 	}
 
-	enum class Rolled {
-		MAP, ROTATE, LIFT
-	}
-
 	interface Step {
 		val name: String
 		val playerJustMoved: Colour
@@ -84,6 +80,10 @@ data class Board(var players: MutableList<Player>, var homes: MutableList<Home>,
 //		return Colour.values()[(player.ordinal + 1) % 4]
 		// 2-player
 		return Colour.values()[(player.ordinal + 2) % 4]
+	}
+
+	override fun nextMoveIsRandom(): Boolean {
+		return step is RollStep
 	}
 
 	private fun findPlayerTile(player: Colour): Index? {

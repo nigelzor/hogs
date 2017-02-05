@@ -19,8 +19,6 @@ package com.github.nigelzor.mcts
  * For more information about Monte Carlo Tree Search check out our web site at www.mcts.ai
  */
 
-import com.github.nigelzor.hogs.Board
-import com.github.nigelzor.hogs.RollMove
 import java.util.Random
 import com.google.common.collect.Iterables
 
@@ -47,7 +45,7 @@ fun <M: Any, P: Any> UCT(rootstate: GameState<M, P>, itermax: Int, verbose: Bool
 
 		// select
 		while (node.untriedMoves.isEmpty() && !node.childNodes.isEmpty()) { // node is fully expanded and non-terminal
-			node = node.select()!!
+			node = node.select()
 			state.apply(node.move!!)
 		}
 
@@ -76,6 +74,10 @@ fun <M: Any, P: Any> UCT(rootstate: GameState<M, P>, itermax: Int, verbose: Bool
 
 	if (verbose) {
 		sortedMoves.takeLast(10).forEach(::println)
+	}
+
+	if (rootnode.useWeights) {
+		return rootnode.selectByWeight().move!!
 	}
 
 	return sortedMoves.last().move!!
@@ -112,18 +114,6 @@ fun <M: Any, P: Any> playUCT(state: GameState<M, P>) {
 	var turn = 0
 	sim@ do {
 		while (!state.possible().isEmpty()) {
-			// FIXME-NG: UCT needs to handle this too...
-			if (state is Board && state.step is Board.RollStep) {
-				val roll = random.nextInt(6)
-				val m = when (roll) {
-					0 -> RollMove(Board.Rolled.MAP)
-					1, 2 -> RollMove(Board.Rolled.ROTATE)
-					else -> RollMove(Board.Rolled.LIFT)
-				}
-				println("Player ${state.step.player} rolled ${m.rolled}")
-				state.apply(m)
-				continue
-			}
 			println(state)
 			val itermax = 20000
 			val startOfTurn = System.nanoTime()
