@@ -15,7 +15,7 @@ class Node<M: Any, P: Any>(val move: M? = null, val parent: Node<M, P>? = null, 
 		if (useWeights) {
 			return selectByWeight()
 		}
-		return childNodes.maxBy { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }!!
+		return childNodes.maxByOrNull { it.wins / it.visits + Math.sqrt(2 * Math.log(visits.toDouble()) / it.visits) }!!
 	}
 
 	fun selectByWeight(): Node<M, P> {
